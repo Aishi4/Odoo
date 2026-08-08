@@ -65,6 +65,51 @@ const validateRentalPeriod = ({ name, duration, unit, status }) => {
   }
 };
 
+const validateDates = (start_date, end_date) => {
+  if (!start_date || !end_date) {
+    throw new AppError('Start date and end date are required', 400);
+  }
+
+  const start = new Date(start_date);
+  const end = new Date(end_date);
+
+  if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+    throw new AppError('Invalid date format. Use YYYY-MM-DD', 400);
+  }
+
+  if (start >= end) {
+    throw new AppError('End date must be strictly after start date', 400);
+  }
+};
+
+const validateCartItem = ({ product_id, rental_period_id, start_date, end_date, quantity }) => {
+  if (!product_id) {
+    throw new AppError('Product ID is required', 400);
+  }
+  if (!rental_period_id) {
+    throw new AppError('Rental period ID is required', 400);
+  }
+  if (quantity === undefined || quantity === null || !Number.isInteger(Number(quantity)) || Number(quantity) < 1) {
+    throw new AppError('Quantity must be an integer greater than or equal to 1', 400);
+  }
+  validateDates(start_date, end_date);
+};
+
+const validateOrderCheckout = ({ delivery_method, delivery_address }) => {
+  if (!delivery_method || !['DELIVERY', 'STORE_PICKUP'].includes(delivery_method)) {
+    throw new AppError('Delivery method must be either DELIVERY or STORE_PICKUP', 400);
+  }
+  if (delivery_method === 'DELIVERY' && (!delivery_address || typeof delivery_address !== 'string' || delivery_address.trim() === '')) {
+    throw new AppError('Delivery address is required when delivery method is DELIVERY', 400);
+  }
+};
+
+const validatePaymentInitiation = ({ payment_method }) => {
+  if (!payment_method || !['ONLINE', 'CASH'].includes(payment_method)) {
+    throw new AppError('Payment method is required and must be either ONLINE or CASH', 400);
+  }
+};
+
 module.exports = {
   isValidEmail,
   validateRegister,
@@ -72,4 +117,8 @@ module.exports = {
   validateProduct,
   validateVariant,
   validateRentalPeriod,
+  validateDates,
+  validateCartItem,
+  validateOrderCheckout,
+  validatePaymentInitiation,
 };

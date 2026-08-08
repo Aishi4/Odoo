@@ -1,0 +1,69 @@
+const { DataTypes } = require('sequelize');
+const { sequelize } = require('../config/db');
+
+const Order = sequelize.define(
+  'Order',
+  {
+    id: {
+      type: DataTypes.UUID,
+      defaultValue: DataTypes.UUIDV4,
+      primaryKey: true,
+    },
+    customer_id: {
+      type: DataTypes.UUID,
+      allowNull: false,
+      references: {
+        model: 'users',
+        key: 'id',
+      },
+    },
+    order_number: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      unique: true,
+    },
+    status: {
+      type: DataTypes.ENUM(
+        'PENDING_PAYMENT',
+        'CONFIRMED',
+        'READY_FOR_PICKUP',
+        'PICKED_UP',
+        'ACTIVE',
+        'RETURN_PENDING',
+        'RETURNED',
+        'COMPLETED',
+        'CANCELLED'
+      ),
+      allowNull: false,
+      defaultValue: 'PENDING_PAYMENT',
+    },
+    subtotal: {
+      type: DataTypes.DECIMAL(10, 2),
+      allowNull: false,
+    },
+    delivery_method: {
+      type: DataTypes.ENUM('DELIVERY', 'STORE_PICKUP'),
+      allowNull: false,
+    },
+    delivery_address: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+    },
+    start_date: {
+      type: DataTypes.DATEONLY,
+      allowNull: false,
+    },
+    end_date: {
+      type: DataTypes.DATEONLY,
+      allowNull: false,
+    },
+  },
+  {
+    tableName: 'rental_orders',
+    timestamps: true,
+    createdAt: 'created_at',
+    updatedAt: 'updated_at',
+  }
+);
+
+module.exports = Order;

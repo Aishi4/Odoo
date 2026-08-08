@@ -1,12 +1,12 @@
 "use client";
-import React, { useState } from 'react';
+import React, { useState, Suspense } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Search, ChevronRight, Check, Heart, X } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 
-export default function Home() {
+function ProductCatalogContent() {
   const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
   const [selectedColors, setSelectedColors] = useState<string[]>([]);
   const [selectedDurations, setSelectedDurations] = useState<string[]>([]);
@@ -30,7 +30,7 @@ export default function Home() {
     setMinPrice(0);
     setMaxPrice(100);
     if (query) {
-      router.push('/');
+      router.push('/product');
     }
   };
 
@@ -272,7 +272,7 @@ export default function Home() {
                     <button 
                       className={`flex-1 py-2.5 rounded-lg font-medium text-sm transition-all ${
                         product.stock 
-                          ? 'bg-[#CD2C58] text-white hover:bg-[#E06B80] shadow-md shadow-[#CD2C58]/20 hover:shadow-lg hover:shadow-[#CD2C58]/30 hover:-translate-y-0.5' 
+                          ? 'bg-[#CD2C58] text-[#FFFFFF] hover:bg-[#E06B80] shadow-md shadow-[#CD2C58]/20 hover:shadow-lg hover:shadow-[#CD2C58]/30 hover:-translate-y-0.5' 
                           : 'bg-gray-100 text-gray-400 cursor-not-allowed'
                       }`}
                       disabled={!product.stock}
@@ -302,5 +302,13 @@ export default function Home() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function ProductCatalogPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center">Loading catalog...</div>}>
+      <ProductCatalogContent />
+    </Suspense>
   );
 }

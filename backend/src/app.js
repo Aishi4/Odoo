@@ -5,7 +5,11 @@ const authRoutes = require('./routes/auth.routes');
 const userRoutes = require('./routes/user.routes');
 const productRoutes = require('./routes/product.routes');
 const rentalPeriodRoutes = require('./routes/rental_period.routes');
-const errorHandler = require('./middleware/error.middleware');
+const cartRoutes = require('./routes/cart.routes');
+const orderRoutes = require('./routes/order.routes');
+const adminOrderRoutes = require('./routes/admin_order.routes');
+const dashboardRoutes = require('./routes/dashboard.routes');
+const { customErrorHandler, globalFallbackErrorHandler } = require('./middleware/error.middleware');
 const AppError = require('./utils/errors');
 
 const app = express();
@@ -30,6 +34,10 @@ app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/rental-periods', rentalPeriodRoutes);
+app.use('/api/cart', cartRoutes);
+app.use('/api/orders', orderRoutes);
+app.use('/api/admin/dashboard', dashboardRoutes);
+app.use('/api/admin', adminOrderRoutes);
 
 // Serve index.html for root path
 app.get('/', (req, res) => {
@@ -41,7 +49,11 @@ app.use('*', (req, res, next) => {
   next(new AppError(`Cannot find ${req.originalUrl} on this server!`, 404));
 });
 
-// Centralized Error Handling Middleware
-app.use(errorHandler);
+// Centralized Error Handling Middlewares (Chained)
+// 1st Error Handler: Handles custom AppError, Sequelize, and JWT errors
+app.use(customErrorHandler);
+
+// 2nd Error Handler: Fallback handler for unhandled 500 errors (called via next(err) if 1st handler returns false)
+app.use(globalFallbackErrorHandler);
 
 module.exports = app;
