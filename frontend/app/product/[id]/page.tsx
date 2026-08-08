@@ -15,7 +15,7 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
   const [startDate, setStartDate] = useState<Date>();
   const [endDate, setEndDate] = useState<Date>();
 
-  // Mock product data
+  // data
   const product = { 
     id: unwrappedParams.id, 
     name: 'Premium Office Chair', 
@@ -31,7 +31,6 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
 
   return (
     <div className="max-w-7xl mx-auto px-6 py-8">
-      {/* Breadcrumb */}
       <div className="text-sm text-gray-500 mb-8 flex items-center gap-2">
         <Link href="/" className="hover:text-[#CD2C58]">Home</Link>
         <ChevronRight className="w-4 h-4" />

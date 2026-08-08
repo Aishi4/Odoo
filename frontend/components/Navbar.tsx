@@ -9,8 +9,9 @@ export default function Navbar() {
   const router = useRouter();
 
   const isAuthPage = pathname === "/login" || pathname === "/register" || pathname === "/vendor-register" || pathname === "/forgot-password";
+  const isAdminPage = pathname.startsWith("/admin");
 
-  if (isAuthPage) {
+  if (isAuthPage || isAdminPage) {
     return null;
   }
 

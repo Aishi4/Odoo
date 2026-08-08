@@ -66,7 +66,7 @@ export default function Checkout() {
               </div>
               <div className="text-right w-full sm:w-auto">
                 <div className="text-sm text-gray-500 mb-1">Total Amount</div>
-                <div className="text-3xl font-black text-gray-900">₹250.00</div>
+                <div className="text-3xl font-black text-gray-900">$250.00</div>
               </div>
             </div>
 
@@ -178,7 +178,7 @@ export default function Checkout() {
                 onClick={() => setStep(4)}
                 className="bg-[#CD2C58] text-white px-8 py-3 rounded-lg font-semibold flex items-center gap-2 hover:bg-[#E06B80] transition-colors shadow-md shadow-[#CD2C58]/20"
               >
-                Pay ₹250.00
+                Pay $250.00
               </button>
             </div>
           </div>

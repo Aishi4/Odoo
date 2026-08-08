@@ -1,61 +1,90 @@
+"use client";
+
 import React from 'react';
+import { Save, HelpCircle } from 'lucide-react';
 
-export default function AdminSettings() {
+export default function SettingsPage() {
   return (
-    <div style={{ maxWidth: '800px' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-        <h1 style={{ fontSize: '2rem', fontWeight: 700 }}>Settings</h1>
-        <button className="btn-primary">Save Changes</button>
-      </div>
-
-      <div className="card" style={{ padding: '2rem', marginBottom: '2rem' }}>
-        <h2 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '1.5rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem' }}>Late Fees & Returns</h2>
-        
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
-          <input type="checkbox" defaultChecked style={{ width: '1.25rem', height: '1.25rem', accentColor: 'var(--primary-color)' }} />
-          <div>
-            <div style={{ fontWeight: 600 }}>Enable Late Fee / Overdue Penalty</div>
-            <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Automatically calculate late fees upon delayed return.</div>
-          </div>
-        </div>
-
+    <div className="p-6 max-w-[1200px] mx-auto min-h-[calc(100vh-3.5rem)]">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
         <div>
-          <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, marginBottom: '0.5rem' }}>Default Late Fee Rate (per hour)</label>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', maxWidth: '200px' }}>
-            <span style={{ fontSize: '1.125rem', fontWeight: 500 }}>₹</span>
-            <input type="number" className="input-field" defaultValue="10" />
-          </div>
+          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Settings</h1>
+          <p className="text-sm text-gray-500 mt-1">Configure global application behavior.</p>
         </div>
+        <button className="px-4 py-2 bg-[#CD2C58] text-white font-medium rounded-md shadow-sm hover:bg-[#b02248] flex items-center gap-2 transition-colors">
+          <Save className="w-4 h-4" /> Save
+        </button>
       </div>
 
-      <div className="card" style={{ padding: '2rem' }}>
-        <h2 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '1.5rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem' }}>System Configuration</h2>
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 space-y-12">
         
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          <a href="#" style={{ padding: '1rem', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div>
-              <div style={{ fontWeight: 600 }}>Attributes & Variants</div>
-              <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Manage colors, sizes, brands.</div>
+        {/* Rental Settings */}
+        <div>
+          <h2 className="text-lg font-bold text-gray-900 mb-6 flex items-center gap-2">
+            Rental Configurations
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-6">
+            <div className="flex items-start gap-4 p-4 border border-gray-100 rounded-lg bg-gray-50/50 hover:bg-gray-50 transition-colors">
+              <input type="checkbox" id="late_fees" defaultChecked className="mt-1 w-4 h-4 rounded border-gray-300 text-[#CD2C58] focus:ring-[#CD2C58]" />
+              <div>
+                <label htmlFor="late_fees" className="font-bold text-gray-900 block mb-1">Global Late Fees</label>
+                <p className="text-sm text-gray-500">Automatically calculate and apply late fees on returns past their due date.</p>
+              </div>
             </div>
-            <span style={{ color: 'var(--primary-color)' }}>Manage &rarr;</span>
-          </a>
-          
-          <a href="#" style={{ padding: '1rem', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div>
-              <div style={{ fontWeight: 600 }}>Pricelists</div>
-              <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Manage discounts and specific pricing rules.</div>
+            <div className="flex items-start gap-4 p-4 border border-gray-100 rounded-lg bg-gray-50/50 hover:bg-gray-50 transition-colors">
+              <input type="checkbox" id="deposit" defaultChecked className="mt-1 w-4 h-4 rounded border-gray-300 text-[#CD2C58] focus:ring-[#CD2C58]" />
+              <div>
+                <label htmlFor="deposit" className="font-bold text-gray-900 block mb-1">Security Deposits</label>
+                <p className="text-sm text-gray-500">Require a security deposit before confirming a rental order.</p>
+              </div>
             </div>
-            <span style={{ color: 'var(--primary-color)' }}>Manage &rarr;</span>
-          </a>
-
-          <a href="#" style={{ padding: '1rem', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div>
-              <div style={{ fontWeight: 600 }}>Quotation Templates</div>
-              <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Configure default quotation formats.</div>
-            </div>
-            <span style={{ color: 'var(--primary-color)' }}>Manage &rarr;</span>
-          </a>
+          </div>
         </div>
+
+        {/* Product Settings */}
+        <div>
+          <h2 className="text-lg font-bold text-gray-900 mb-6 flex items-center gap-2">
+            Product Catalog
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-6">
+            <div className="flex items-start gap-4 p-4 border border-gray-100 rounded-lg bg-gray-50/50 hover:bg-gray-50 transition-colors">
+              <input type="checkbox" id="variants" defaultChecked className="mt-1 w-4 h-4 rounded border-gray-300 text-[#CD2C58] focus:ring-[#CD2C58]" />
+              <div>
+                <label htmlFor="variants" className="font-bold text-gray-900 block mb-1">Product Variants</label>
+                <p className="text-sm text-gray-500">Sell variants of a product using attributes (size, color, etc.)</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-4 p-4 border border-gray-100 rounded-lg bg-gray-50/50 hover:bg-gray-50 transition-colors">
+              <input type="checkbox" id="uom" className="mt-1 w-4 h-4 rounded border-gray-300 text-[#CD2C58] focus:ring-[#CD2C58]" />
+              <div>
+                <label htmlFor="uom" className="font-bold text-gray-900 block mb-1">Units of Measure</label>
+                <p className="text-sm text-gray-500">Sell and purchase products in different units of measure</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Invoicing Settings */}
+        <div>
+          <h2 className="text-lg font-bold text-gray-900 mb-6 flex items-center gap-2">
+            Invoicing
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-6">
+            <div className="flex items-start gap-4 p-4 border border-gray-100 rounded-lg bg-gray-50/50 hover:bg-gray-50 transition-colors">
+              <input type="checkbox" id="taxes" defaultChecked className="mt-1 w-4 h-4 rounded border-gray-300 text-[#CD2C58] focus:ring-[#CD2C58]" />
+              <div>
+                <label htmlFor="taxes" className="font-bold text-gray-900 block mb-1">Default Taxes</label>
+                <p className="text-sm text-gray-500 mb-2">Apply default taxes to all orders.</p>
+                <div className="mt-2 flex gap-2 w-full">
+                  <select className="border border-gray-300 rounded-md py-1.5 px-3 text-sm focus:outline-none focus:ring-1 focus:ring-[#CD2C58] focus:border-[#CD2C58] flex-1">
+                    <option>Sales Tax (18%)</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
       </div>
     </div>
   );
