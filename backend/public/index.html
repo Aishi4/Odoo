@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rental Management API - Phase 1 Test Dashboard & cURL Explorer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%);
+      --card-bg: rgba(30, 41, 59, 0.7);
+      --card-border: rgba(255, 255, 255, 0.1);
+      --accent-purple: #8b5cf6;
+      --accent-cyan: #06b6d4;
+      --accent-green: #10b981;
+      --accent-amber: #f59e0b;
+      --accent-red: #ef4444;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --code-bg: #090d16;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg-gradient);
+      color: var(--text-main);
+      min-height: 100vh;
+      padding: 2rem 1rem;
+      line-height: 1.5;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 2.5rem;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 0.25rem 0.75rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      background: rgba(139, 92, 246, 0.2);
+      color: var(--accent-purple);
+      border: 1px solid rgba(139, 92, 246, 0.4);
+      margin-bottom: 0.75rem;
+    }
+
+    h1 {
+      font-size: 2.5rem;
+      font-weight: 800;
+      background: linear-gradient(to right, #c084fc, #38bdf8);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 0.5rem;
+    }
+
+    p.subtitle {
+      color: var(--text-muted);
+      font-size: 1rem;
+    }
+
+    .config-bar {
+      background: var(--card-bg);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 1rem 1.5rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      align-items: center;
+      margin-bottom: 2rem;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+    }
+
+    .config-bar label {
+      font-weight: 600;
+      color: var(--text-muted);
+      font-size: 0.875rem;
+    }
+
+    .config-bar input {
+      flex: 1;
+      min-width: 200px;
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 6px;
+      padding: 0.5rem 0.75rem;
+      color: #fff;
+      font-family: 'Fira Code', monospace;
+      font-size: 0.875rem;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1.5rem;
+    }
+
+    @media (min-width: 900px) {
+      .grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    .card {
+      background: var(--card-bg);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      transition: transform 0.2s ease, border-color 0.2s ease;
+    }
+
+    .card:hover {
+      border-color: rgba(139, 92, 246, 0.4);
+      transform: translateY(-2px);
+    }
+
+    .method-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+    }
+
+    .method-badge {
+      font-family: 'Fira Code', monospace;
+      font-weight: 700;
+      font-size: 0.8rem;
+      padding: 0.3rem 0.6rem;
+      border-radius: 6px;
+    }
+
+    .method-post { background: rgba(16, 185, 129, 0.2); color: var(--accent-green); border: 1px solid rgba(16, 185, 129, 0.4); }
+    .method-get { background: rgba(6, 182, 212, 0.2); color: var(--accent-cyan); border: 1px solid rgba(6, 182, 212, 0.4); }
+    .method-put { background: rgba(245, 158, 11, 0.2); color: var(--accent-amber); border: 1px solid rgba(245, 158, 11, 0.4); }
+
+    .endpoint-path {
+      font-family: 'Fira Code', monospace;
+      font-weight: 600;
+      font-size: 0.95rem;
+      color: #fff;
+    }
+
+    .auth-tag {
+      font-size: 0.75rem;
+      padding: 0.15rem 0.5rem;
+      border-radius: 4px;
+      background: rgba(239, 68, 68, 0.2);
+      color: var(--accent-red);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+
+    .auth-tag.public {
+      background: rgba(16, 185, 129, 0.15);
+      color: var(--accent-green);
+      border-color: rgba(16, 185, 129, 0.3);
+    }
+
+    .card-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #f1f5f9;
+    }
+
+    .card-desc {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+    }
+
+    .code-box {
+      position: relative;
+      background: var(--code-bg);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 8px;
+      padding: 0.75rem 1rem;
+      font-family: 'Fira Code', monospace;
+      font-size: 0.8rem;
+      color: #e2e8f0;
+      overflow-x: auto;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+
+    .copy-btn {
+      position: absolute;
+      top: 0.5rem;
+      right: 0.5rem;
+      background: rgba(255, 255, 255, 0.1);
+      border: none;
+      color: #cbd5e1;
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      cursor: pointer;
+      transition: background 0.2s ease;
+    }
+
+    .copy-btn:hover {
+      background: var(--accent-purple);
+      color: #fff;
+    }
+
+    .test-actions {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 0.5rem;
+    }
+
+    .btn {
+      background: linear-gradient(135deg, var(--accent-purple), #6366f1);
+      color: #fff;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: opacity 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .btn:hover {
+      opacity: 0.9;
+    }
+
+    .response-output {
+      background: #040711;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      padding: 0.75rem;
+      font-family: 'Fira Code', monospace;
+      font-size: 0.75rem;
+      color: #a7f3d0;
+      max-height: 180px;
+      overflow-y: auto;
+      display: none;
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 1.5rem;
+      right: 1.5rem;
+      background: var(--accent-green);
+      color: #fff;
+      padding: 0.75rem 1.25rem;
+      border-radius: 8px;
+      font-weight: 600;
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+      display: none;
+      animation: fadeIn 0.3s ease;
+      z-index: 1000;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <span class="badge">Phase 1 + Nodemailer Integration</span>
+      <h1>Rental Management API Explorer</h1>
+      <p class="subtitle">Copy cURL snippets directly into Postman or test endpoints live</p>
+    </header>
+
+    <div class="config-bar">
+      <label for="baseUrl">Base API URL:</label>
+      <input type="text" id="baseUrl" value="http://localhost:5000" />
+      <label for="jwtToken">JWT Token:</label>
+      <input type="text" id="jwtToken" placeholder="Paste token here for protected routes..." />
+      <label for="resetTokenInput">Reset Token:</label>
+      <input type="text" id="resetTokenInput" placeholder="Auto-captured reset token..." />
+    </div>
+
+    <div class="grid">
+      <!-- 1. Health Check -->
+      <div class="card">
+        <div class="method-header">
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <span class="method-badge method-get">GET</span>
+            <span class="endpoint-path">/api/health</span>
+          </div>
+          <span class="auth-tag public">Public</span>
+        </div>
+        <div class="card-title">API Health Check</div>
+        <div class="card-desc">Verify server status and connection health</div>
+        <div class="code-box">
+          <button class="copy-btn" onclick="copyCurl('curl-health')">Copy cURL</button>
+          <code id="curl-health">curl -X GET "http://localhost:5000/api/health"</code>
+        </div>
+        <div class="test-actions">
+          <button class="btn" onclick="executeApi('health', 'GET', '/api/health')">Run Test</button>
+        </div>
+        <pre class="response-output" id="res-health"></pre>
+      </div>
+
+      <!-- 2. Register -->
+      <div class="card">
+        <div class="method-header">
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <span class="method-badge method-post">POST</span>
+            <span class="endpoint-path">/api/auth/register</span>
+          </div>
+          <span class="auth-tag public">Public</span>
+        </div>
+        <div class="card-title">User Registration</div>
+        <div class="card-desc">Registers a new user and returns UUID without password</div>
+        <div class="code-box">
+          <button class="copy-btn" onclick="copyCurl('curl-register')">Copy cURL</button>
+          <code id="curl-register">curl -X POST "http://localhost:5000/api/auth/register" \
+  -H "Content-Type: application/json" \
+  -d '{"name": "Shovon Halder", "email": "shovon@example.com", "password": "password123"}'</code>
+        </div>
+        <div class="test-actions">
+          <button class="btn" onclick="executeApi('register', 'POST', '/api/auth/register', {name: 'Shovon Halder', email: 'shovon@example.com', password: 'password123'})">Run Test</button>
+        </div>
+        <pre class="response-output" id="res-register"></pre>
+      </div>
+
+      <!-- 3. Login -->
+      <div class="card">
+        <div class="method-header">
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <span class="method-badge method-post">POST</span>
+            <span class="endpoint-path">/api/auth/login</span>
+          </div>
+          <span class="auth-tag public">Public</span>
+        </div>
+        <div class="card-title">User Login</div>
+        <div class="card-desc">Authenticates email/password with bcrypt and generates JWT</div>
+        <div class="code-box">
+          <button class="copy-btn" onclick="copyCurl('curl-login')">Copy cURL</button>
+          <code id="curl-login">curl -X POST "http://localhost:5000/api/auth/login" \
+  -H "Content-Type: application/json" \
+  -d '{"email": "shovon@example.com", "password": "password123"}'</code>
+        </div>
+        <div class="test-actions">
+          <button class="btn" onclick="executeApi('login', 'POST', '/api/auth/login', {email: 'shovon@example.com', password: 'password123'}, true)">Run Test & Save JWT</button>
+        </div>
+        <pre class="response-output" id="res-login"></pre>
+      </div>
+
+      <!-- 4. Forgot Password -->
+      <div class="card">
+        <div class="method-header">
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <span class="method-badge method-post">POST</span>
+            <span class="endpoint-path">/api/auth/forgot-password</span>
+          </div>
+          <span class="auth-tag public">Public</span>
+        </div>
+        <div class="card-title">Forgot Password (Nodemailer Email)</div>
+        <div class="card-desc">Generates 15-min reset token and sends email via Gmail SMTP</div>
+        <div class="code-box">
+          <button class="copy-btn" onclick="copyCurl('curl-forgot-password')">Copy cURL</button>
+          <code id="curl-forgot-password">curl -X POST "http://localhost:5000/api/auth/forgot-password" \
+  -H "Content-Type: application/json" \
+  -d '{"email": "shovon@example.com"}'</code>
+        </div>
+        <div class="test-actions">
+          <button class="btn" onclick="executeForgotApi()">Run Test & Send Email</button>
+        </div>
+        <pre class="response-output" id="res-forgot-password"></pre>
+      </div>
+
+      <!-- 5. Reset Password -->
+      <div class="card">
+        <div class="method-header">
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <span class="method-badge method-post">POST</span>
+            <span class="endpoint-path">/api/auth/reset-password</span>
+          </div>
+          <span class="auth-tag public">Public</span>
+        </div>
+        <div class="card-title">Reset Password</div>
+        <div class="card-desc">Validates reset token and updates password hash in database</div>
+        <div class="code-box">
+          <button class="copy-btn" onclick="copyCurl('curl-reset-password')">Copy cURL</button>
+          <code id="curl-reset-password">curl -X POST "http://localhost:5000/api/auth/reset-password" \
+  -H "Content-Type: application/json" \
+  -d '{"token": "YOUR_RESET_TOKEN", "newPassword": "newpassword123"}'</code>
+        </div>
+        <div class="test-actions">
+          <button class="btn" onclick="executeResetApi()">Run Test (Reset Password)</button>
+        </div>
+        <pre class="response-output" id="res-reset-password"></pre>
+      </div>
+
+      <!-- 6. Get Current User -->
+      <div class="card">
+        <div class="method-header">
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <span class="method-badge method-get">GET</span>
+            <span class="endpoint-path">/api/auth/me</span>
+          </div>
+          <span class="auth-tag">Protected</span>
+        </div>
+        <div class="card-title">Get Current Authenticated User</div>
+        <div class="card-desc">Requires Authorization: Bearer &lt;token&gt; header</div>
+        <div class="code-box">
+          <button class="copy-btn" onclick="copyCurl('curl-me')">Copy cURL</button>
+          <code id="curl-me">curl -X GET "http://localhost:5000/api/auth/me" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"</code>
+        </div>
+        <div class="test-actions">
+          <button class="btn" onclick="executeApi('me', 'GET', '/api/auth/me', null, false, true)">Run Test</button>
+        </div>
+        <pre class="response-output" id="res-me"></pre>
+      </div>
+
+      <!-- 7. Get User Profile -->
+      <div class="card">
+        <div class="method-header">
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <span class="method-badge method-get">GET</span>
+            <span class="endpoint-path">/api/users/profile</span>
+          </div>
+          <span class="auth-tag">Protected</span>
+        </div>
+        <div class="card-title">Get User Profile</div>
+        <div class="card-desc">Fetch full profile including name, profile_image, address</div>
+        <div class="code-box">
+          <button class="copy-btn" onclick="copyCurl('curl-get-profile')">Copy cURL</button>
+          <code id="curl-get-profile">curl -X GET "http://localhost:5000/api/users/profile" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"</code>
+        </div>
+        <div class="test-actions">
+          <button class="btn" onclick="executeApi('get-profile', 'GET', '/api/users/profile', null, false, true)">Run Test</button>
+        </div>
+        <pre class="response-output" id="res-get-profile"></pre>
+      </div>
+
+      <!-- 8. Update User Profile -->
+      <div class="card">
+        <div class="method-header">
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <span class="method-badge method-put">PUT</span>
+            <span class="endpoint-path">/api/users/profile</span>
+          </div>
+          <span class="auth-tag">Protected</span>
+        </div>
+        <div class="card-title">Update User Profile</div>
+        <div class="card-desc">Update name, profile_image, or address via Sequelize</div>
+        <div class="code-box">
+          <button class="copy-btn" onclick="copyCurl('curl-put-profile')">Copy cURL</button>
+          <code id="curl-put-profile">curl -X PUT "http://localhost:5000/api/users/profile" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -d '{"name": "Shovon Halder Updated", "profile_image": "https://example.com/avatar.jpg", "address": "123 Tech St, Silicon Valley"}'</code>
+        </div>
+        <div class="test-actions">
+          <button class="btn" onclick="executeApi('put-profile', 'PUT', '/api/users/profile', {name: 'Shovon Halder Updated', profile_image: 'https://example.com/avatar.jpg', address: '123 Tech St'}, false, true)">Run Test</button>
+        </div>
+        <pre class="response-output" id="res-put-profile"></pre>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast">Copied cURL command to clipboard!</div>
+
+  <script>
+    function copyCurl(elementId) {
+      const codeElement = document.getElementById(elementId);
+      const baseUrl = document.getElementById('baseUrl').value.trim();
+      const jwtToken = document.getElementById('jwtToken').value.trim() || 'YOUR_JWT_TOKEN';
+      const resetToken = document.getElementById('resetTokenInput').value.trim() || 'YOUR_RESET_TOKEN';
+      
+      let text = codeElement.innerText
+        .replace(/http:\/\/localhost:5000/g, baseUrl)
+        .replace(/YOUR_JWT_TOKEN/g, jwtToken)
+        .replace(/YOUR_RESET_TOKEN/g, resetToken);
+
+      navigator.clipboard.writeText(text).then(() => {
+        showToast('cURL copied! Paste into Postman or Terminal.');
+      });
+    }
+
+    function showToast(message) {
+      const toast = document.getElementById('toast');
+      toast.innerText = message;
+      toast.style.display = 'block';
+      setTimeout(() => {
+        toast.style.display = 'none';
+      }, 2500);
+    }
+
+    async function executeApi(key, method, path, body = null, saveToken = false, isProtected = false) {
+      const baseUrl = document.getElementById('baseUrl').value.trim();
+      const outputElem = document.getElementById(`res-${key}`);
+      outputElem.style.display = 'block';
+      outputElem.innerText = 'Sending request...';
+
+      const headers = { 'Content-Type': 'application/json' };
+
+      if (isProtected) {
+        const jwtToken = document.getElementById('jwtToken').value.trim();
+        if (!jwtToken) {
+          outputElem.innerText = 'Error: Please paste or generate a JWT token above first.';
+          return;
+        }
+        headers['Authorization'] = `Bearer ${jwtToken}`;
+      }
+
+      try {
+        const res = await fetch(`${baseUrl}${path}`, {
+          method,
+          headers,
+          body: body ? JSON.stringify(body) : null,
+        });
+
+        const data = await res.json();
+        outputElem.innerText = `Status: ${res.status}\n` + JSON.stringify(data, null, 2);
+
+        if (saveToken && data.data && data.data.token) {
+          document.getElementById('jwtToken').value = data.data.token;
+          showToast('Saved JWT token automatically!');
+        }
+      } catch (err) {
+        outputElem.innerText = `Error connecting to API:\n${err.message}`;
+      }
+    }
+
+    async function executeForgotApi() {
+      const baseUrl = document.getElementById('baseUrl').value.trim();
+      const outputElem = document.getElementById('res-forgot-password');
+      outputElem.style.display = 'block';
+      outputElem.innerText = 'Sending email via Nodemailer...';
+
+      try {
+        const res = await fetch(`${baseUrl}/api/auth/forgot-password`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: 'shovon@example.com' }),
+        });
+
+        const data = await res.json();
+        outputElem.innerText = `Status: ${res.status}\n` + JSON.stringify(data, null, 2);
+
+        if (data.data && data.data.resetToken) {
+          document.getElementById('resetTokenInput').value = data.data.resetToken;
+          showToast('Email sent & Reset Token captured!');
+        }
+      } catch (err) {
+        outputElem.innerText = `Error connecting to API:\n${err.message}`;
+      }
+    }
+
+    async function executeResetApi() {
+      const baseUrl = document.getElementById('baseUrl').value.trim();
+      const outputElem = document.getElementById('res-reset-password');
+      const resetToken = document.getElementById('resetTokenInput').value.trim();
+
+      if (!resetToken) {
+        outputElem.style.display = 'block';
+        outputElem.innerText = 'Error: Please generate a Reset Token first via Forgot Password.';
+        return;
+      }
+
+      outputElem.style.display = 'block';
+      outputElem.innerText = 'Resetting password...';
+
+      try {
+        const res = await fetch(`${baseUrl}/api/auth/reset-password`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token: resetToken, newPassword: 'newpassword123' }),
+        });
+
+        const data = await res.json();
+        outputElem.innerText = `Status: ${res.status}\n` + JSON.stringify(data, null, 2);
+        if (data.success) {
+          showToast('Password reset successfully!');
+        }
+      } catch (err) {
+        outputElem.innerText = `Error connecting to API:\n${err.message}`;
+      }
+    }
+  </script>
+</body>
+</html>
