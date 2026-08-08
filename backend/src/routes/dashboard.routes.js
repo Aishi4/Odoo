@@ -3,7 +3,7 @@ const router = express.Router();
 const dashboardController = require('../controllers/dashboard.controller');
 const { authenticateToken, authorizeRoles } = require('../middleware/auth.middleware');
 
-router.use(authenticateToken, authorizeRoles('ADMIN'));
+router.use(authenticateToken, authorizeRoles('ADMIN', 'VENDOR'));
 
 router.get('/overview', dashboardController.getOverview);
 router.get('/active-rentals', dashboardController.getActiveRentals);

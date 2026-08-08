@@ -19,6 +19,19 @@ const getProfile = async (req, res, next) => {
 };
 
 /**
+ * GET /api/users
+ * Get all registered users (Admin only)
+ */
+const getAllUsers = async (req, res, next) => {
+  try {
+    const users = await userService.findAllUsers();
+    return successResponse(res, 200, 'Users retrieved successfully', users);
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
  * PUT /api/users/profile
  * Update authenticated user's profile (name, profile_image, address)
  */
@@ -48,5 +61,6 @@ const updateProfile = async (req, res, next) => {
 
 module.exports = {
   getProfile,
+  getAllUsers,
   updateProfile,
 };

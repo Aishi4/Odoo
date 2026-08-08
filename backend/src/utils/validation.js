@@ -82,17 +82,14 @@ const validateDates = (start_date, end_date) => {
   }
 };
 
-const validateCartItem = ({ product_id, rental_period_id, start_date, end_date, quantity }) => {
-  if (!product_id) {
+const validateCartItem = ({ product_id, product_variant_id, quantity }) => {
+  const pId = product_id || product_variant_id;
+  if (!pId) {
     throw new AppError('Product ID is required', 400);
   }
-  if (!rental_period_id) {
-    throw new AppError('Rental period ID is required', 400);
-  }
-  if (quantity === undefined || quantity === null || !Number.isInteger(Number(quantity)) || Number(quantity) < 1) {
+  if (quantity !== undefined && quantity !== null && (isNaN(quantity) || Number(quantity) < 1)) {
     throw new AppError('Quantity must be an integer greater than or equal to 1', 400);
   }
-  validateDates(start_date, end_date);
 };
 
 const validateOrderCheckout = ({ delivery_method, delivery_address }) => {

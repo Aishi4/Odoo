@@ -3,7 +3,7 @@ const { successResponse } = require('../utils/response');
 
 /**
  * GET /api/admin/orders
- * Admin view all orders with optional filters (status, customer_id, start_date, end_date)
+ * Admin & Vendor view all orders with optional filters (status, customer_id, start_date, end_date)
  */
 const getAllOrders = async (req, res, next) => {
   try {
@@ -22,6 +22,24 @@ const getAllOrders = async (req, res, next) => {
   }
 };
 
+/**
+ * PUT /api/admin/orders/:id/status
+ * Admin & Vendor update order status
+ */
+const updateOrderStatus = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    const updatedOrder = await orderService.updateOrderStatus(id, status);
+
+    return successResponse(res, 200, `Order status updated to ${status} successfully`, updatedOrder);
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getAllOrders,
+  updateOrderStatus,
 };

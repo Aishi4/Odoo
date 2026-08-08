@@ -6,34 +6,34 @@ const { authenticateToken, authorizeRoles } = require('../middleware/auth.middle
 
 // --- Product Endpoints ---
 
-// POST /api/products (Admin only)
-router.post('/', authenticateToken, authorizeRoles('ADMIN'), productController.createProduct);
+// POST /api/products (Admin & Vendor)
+router.post('/', authenticateToken, authorizeRoles('ADMIN', 'VENDOR'), productController.createProduct);
 
-// GET /api/products (Authenticated users - optional status filter)
-router.get('/', authenticateToken, productController.getAllProducts);
+// GET /api/products (Public / Authenticated users - optional status filter)
+router.get('/', productController.getAllProducts);
 
-// GET /api/products/:id (Authenticated users)
-router.get('/:id', authenticateToken, productController.getProductById);
+// GET /api/products/:id (Public / Authenticated users)
+router.get('/:id', productController.getProductById);
 
-// PUT /api/products/:id (Admin only)
-router.put('/:id', authenticateToken, authorizeRoles('ADMIN'), productController.updateProduct);
+// PUT /api/products/:id (Admin & Vendor)
+router.put('/:id', authenticateToken, authorizeRoles('ADMIN', 'VENDOR'), productController.updateProduct);
 
-// DELETE /api/products/:id (Admin only - soft delete)
-router.delete('/:id', authenticateToken, authorizeRoles('ADMIN'), productController.deleteProduct);
+// DELETE /api/products/:id (Admin & Vendor - soft delete)
+router.delete('/:id', authenticateToken, authorizeRoles('ADMIN', 'VENDOR'), productController.deleteProduct);
 
 
 // --- Product Variant Endpoints ---
 
-// POST /api/products/:productId/variants (Admin only)
-router.post('/:productId/variants', authenticateToken, authorizeRoles('ADMIN'), variantController.createVariant);
+// POST /api/products/:productId/variants (Admin & Vendor)
+router.post('/:productId/variants', authenticateToken, authorizeRoles('ADMIN', 'VENDOR'), variantController.createVariant);
 
 // GET /api/products/:productId/variants (Authenticated users)
-router.get('/:productId/variants', authenticateToken, variantController.getVariantsByProductId);
+router.get('/:productId/variants', productController.getProductById);
 
-// PUT /api/products/:productId/variants/:variantId (Admin only)
-router.put('/:productId/variants/:variantId', authenticateToken, authorizeRoles('ADMIN'), variantController.updateVariant);
+// PUT /api/products/:productId/variants/:variantId (Admin & Vendor)
+router.put('/:productId/variants/:variantId', authenticateToken, authorizeRoles('ADMIN', 'VENDOR'), variantController.updateVariant);
 
-// DELETE /api/products/:productId/variants/:variantId (Admin only - soft delete)
-router.delete('/:productId/variants/:variantId', authenticateToken, authorizeRoles('ADMIN'), variantController.deleteVariant);
+// DELETE /api/products/:productId/variants/:variantId (Admin & Vendor - soft delete)
+router.delete('/:productId/variants/:variantId', authenticateToken, authorizeRoles('ADMIN', 'VENDOR'), variantController.deleteVariant);
 
 module.exports = router;

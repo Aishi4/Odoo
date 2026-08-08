@@ -1,88 +1,221 @@
 "use client";
-import React, { useState } from 'react';
-import { Calendar as CalendarIcon, GitCompare, Heart, ChevronRight, X, Star } from 'lucide-react';
+
+import React, { useState, useEffect } from 'react';
+import { Calendar as CalendarIcon, GitCompare, Heart, ChevronRight, X, Star, Loader2, CheckCircle2, PackageX, ShoppingBag, AlertTriangle } from 'lucide-react';
 import { format } from 'date-fns';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import Link from "next/link";
+import { useRouter } from 'next/navigation';
+import { catalogApi, cartApi } from '@/lib/api';
 
 export default function ProductDetail({ params }: { params: Promise<{ id: string }> }) {
   const unwrappedParams = React.use(params);
-  const [showConfigModal, setShowConfigModal] = useState(false);
+  const router = useRouter();
+  
+  const [product, setProduct] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [adding, setAdding] = useState(false);
   const [qty, setQty] = useState(1);
-  const [selectedVariant, setSelectedVariant] = useState('Black');
   const [startDate, setStartDate] = useState<Date>();
   const [endDate, setEndDate] = useState<Date>();
+  const [message, setMessage] = useState<string | null>(null);
+  const [isWishlisted, setIsWishlisted] = useState(false);
 
-  // data
-  const product = { 
-    id: unwrappedParams.id, 
-    name: 'Premium Office Chair', 
-    code: 'PRD-001-OC',
-    rating: 4.8,
-    reviews: 124,
-    price: 15, 
-    period: 'day', 
-    img: 'https://images.unsplash.com/photo-1505843490538-5133c6c7d0e1?w=1000&q=80',
-    description: 'Experience ultimate comfort with our premium ergonomic office chair. Perfect for long working hours with adjustable lumbar support, breathable mesh, and customizable recline settings.',
-    variants: ['Black', 'Grey', 'White'],
+  useEffect(() => {
+    const fetchProduct = async () => {
+      setLoading(true);
+      const res = await catalogApi.getProductById(unwrappedParams.id);
+      setLoading(false);
+
+      if (res.success && res.data) {
+        setProduct(res.data);
+        
+        try {
+          const list = JSON.parse(localStorage.getItem('wishlist') || '[]');
+          if (Array.isArray(list)) {
+            setIsWishlisted(list.some((i: any) => i.id === res.data.id));
+          }
+        } catch (e) {}
+      } else {
+        setProduct(null);
+      }
+    };
+
+    fetchProduct();
+  }, [unwrappedParams.id]);
+
+  const toggleWishlist = () => {
+    if (!product) return;
+
+    let list: any[] = [];
+    try {
+      list = JSON.parse(localStorage.getItem('wishlist') || '[]');
+      if (!Array.isArray(list)) list = [];
+    } catch (err) {
+      list = [];
+    }
+
+    const itemObj = {
+      id: product.id,
+      name: product.name,
+      base_price: product.base_price,
+      price: product.base_price,
+      img: product.image_url || 'https://images.unsplash.com/photo-1505843490538-5133c6c7d0e1?w=500&q=80',
+      description: product.description,
+    };
+
+    const exists = list.some((item) => item.id === product.id);
+    let updated = [];
+    if (exists) {
+      updated = list.filter((item) => item.id !== product.id);
+      setIsWishlisted(false);
+    } else {
+      updated = [...list, itemObj];
+      setIsWishlisted(true);
+    }
+
+    localStorage.setItem('wishlist', JSON.stringify(updated));
+    window.dispatchEvent(new Event('wishlistUpdated'));
   };
+
+  const handleAddToCart = async () => {
+    if (!product) return;
+    const isAvailable = product.status === 'ACTIVE' && product.is_active !== false;
+    if (!isAvailable) return;
+
+    setAdding(true);
+    setMessage(null);
+
+    const sDateStr = startDate ? startDate.toISOString().split('T')[0] : undefined;
+    const eDateStr = endDate ? endDate.toISOString().split('T')[0] : undefined;
+
+    const res = await cartApi.addItem({
+      product_id: product.id,
+      quantity: qty,
+      start_date: sDateStr,
+      end_date: eDateStr,
+    });
+
+    if (!res.success) {
+      try {
+        const localCart = JSON.parse(localStorage.getItem('cart') || '[]');
+        const existing = localCart.find((i: any) => i.id === product.id);
+        if (existing) {
+          existing.quantity += qty;
+        } else {
+          localCart.push({
+            id: product.id,
+            product: product,
+            name: product.name,
+            price: product.base_price,
+            img: product.image_url,
+            quantity: qty,
+          });
+        }
+        localStorage.setItem('cart', JSON.stringify(localCart));
+      } catch (err) {}
+    }
+
+    setAdding(false);
+    window.dispatchEvent(new Event('cartUpdated'));
+
+    setMessage('Item successfully added to your cart!');
+    setTimeout(() => router.push('/cart'), 800);
+  };
+
+  if (loading) {
+    return (
+      <div className="max-w-7xl mx-auto px-6 py-16 text-center text-gray-500 min-h-[calc(100vh-5rem)] flex flex-col items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-[#CD2C58] mb-3" />
+        <span>Loading product details...</span>
+      </div>
+    );
+  }
+
+  if (!product) {
+    return (
+      <div className="max-w-4xl mx-auto px-6 py-20 text-center min-h-[calc(100vh-5rem)] flex flex-col items-center justify-center">
+        <PackageX className="w-16 h-16 text-gray-300 mb-4" />
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Product Not Found</h2>
+        <p className="text-gray-500 mb-6">The requested product could not be found in the live database.</p>
+        <Link href="/" className="px-6 py-3 bg-[#CD2C58] text-white font-bold rounded-xl hover:bg-[#b02248] transition-colors">
+          Return to Catalog
+        </Link>
+      </div>
+    );
+  }
+
+  const name = product.name;
+  const price = product.base_price || 0;
+  const description = product.description || 'High-performance rental equipment.';
+  const imgUrl = product.image_url || 'https://images.unsplash.com/photo-1505843490538-5133c6c7d0e1?w=1000&q=80';
+  const isAvailable = product.status === 'ACTIVE' && product.is_active !== false;
 
   return (
     <div className="max-w-7xl mx-auto px-6 py-8">
       <div className="text-sm text-gray-500 mb-8 flex items-center gap-2">
         <Link href="/" className="hover:text-[#CD2C58]">Home</Link>
         <ChevronRight className="w-4 h-4" />
-        <Link href="/product" className="hover:text-[#CD2C58]">Products</Link>
+        <Link href="/" className="hover:text-[#CD2C58]">Products</Link>
         <ChevronRight className="w-4 h-4" />
-        <span className="text-gray-900 font-medium">{product.name}</span>
+        <span className="text-gray-900 font-medium">{name}</span>
       </div>
+
+      {message && (
+        <div className="mb-6 p-4 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-700 text-sm flex items-center gap-3">
+          <CheckCircle2 className="w-5 h-5" />
+          <span>{message}</span>
+        </div>
+      )}
 
       <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden flex flex-col lg:flex-row">
         
         {/* Left: Product Image */}
         <div className="w-full lg:w-1/2 bg-gray-50 p-8 flex items-center justify-center relative border-b lg:border-b-0 lg:border-r border-gray-200">
-          <div className="absolute top-4 left-4 bg-[#FFE6D4] text-[#CD2C58] text-xs font-bold px-3 py-1 rounded-full">
-            In Stock
+          <div className={`absolute top-4 left-4 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider ${isAvailable ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800 flex items-center gap-1'}`}>
+            {!isAvailable && <AlertTriangle className="w-3 h-3" />}
+            {isAvailable ? 'In Stock' : 'Out of Stock'}
           </div>
+          
           <img
-            src={product.img} 
-            alt={product.name} 
-            className="w-full max-w-md h-auto object-contain drop-shadow-xl" 
+            src={imgUrl} 
+            alt={name} 
+            className={`w-full max-w-md h-auto object-contain drop-shadow-xl ${!isAvailable ? 'grayscale opacity-75' : ''}`} 
           />
         </div>
 
         {/* Right: Product Info */}
         <div className="w-full lg:w-1/2 p-8 lg:p-12 flex flex-col">
           <div className="mb-2 text-xs text-gray-500 font-medium uppercase tracking-widest">
-            {product.code}
+            {product?.category || 'EQUIPMENT'}
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-4">{product.name}</h1>
+          <h1 className="text-3xl font-bold text-gray-900 mb-4">{name}</h1>
           
           <div className="flex items-center gap-4 mb-6">
             <div className="flex items-center gap-1">
               {[...Array(5)].map((_, i) => (
-                <Star key={i} className={`w-5 h-5 ${i < Math.floor(product.rating) ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'}`} />
+                <Star key={i} className="w-5 h-5 text-yellow-400 fill-yellow-400" />
               ))}
             </div>
-            <span className="text-sm font-medium text-gray-700">{product.rating} Rating</span>
+            <span className="text-sm font-medium text-gray-700">4.9 Rating</span>
             <span className="text-gray-300">•</span>
-            <span className="text-sm text-gray-500 hover:text-[#CD2C58] cursor-pointer transition-colors">{product.reviews} Reviews</span>
+            <span className="text-sm text-gray-500">Verified Equipment</span>
           </div>
 
           <div className="flex items-baseline gap-2 mb-6">
-            <span className="text-4xl font-black text-[#CD2C58]">₹{product.price}</span>
-            <span className="text-lg text-gray-500 font-medium">/ {product.period}</span>
+            <span className="text-4xl font-black text-[#CD2C58]">₹{price}</span>
+            <span className="text-lg text-gray-500 font-medium">/ day</span>
           </div>
           
           <p className="text-gray-600 mb-8 leading-relaxed">
-            {product.description}
+            {description}
           </p>
 
           <div className="bg-gray-50 rounded-xl p-6 mb-8 border border-gray-100">
             <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-              <CalendarIcon className="w-5 h-5 text-[#CD2C58]" /> Rental Period
+              <CalendarIcon className="w-5 h-5 text-[#CD2C58]" /> Select Rental Dates
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="flex flex-col gap-2">
@@ -94,7 +227,7 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
                       className={`w-full justify-start text-left font-normal py-5 ${!startDate && "text-gray-500"}`}
                     >
                       <CalendarIcon className="mr-2 h-4 w-4" />
-                      {startDate ? format(startDate, "PPP") : <span>Pick a date</span>}
+                      {startDate ? format(startDate, "PPP") : <span>Pick start date</span>}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="start">
@@ -116,7 +249,7 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
                       className={`w-full justify-start text-left font-normal py-5 ${!endDate && "text-gray-500"}`}
                     >
                       <CalendarIcon className="mr-2 h-4 w-4" />
-                      {endDate ? format(endDate, "PPP") : <span>Pick a date</span>}
+                      {endDate ? format(endDate, "PPP") : <span>Pick end date</span>}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="start">
@@ -132,100 +265,38 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
             </div>
           </div>
 
-          <div className="mt-auto pt-8 border-t border-gray-200">
-            <div className="flex flex-col sm:flex-row gap-4 items-center">
-              {/* Quantity */}
-              <div className="flex items-center border border-gray-300 rounded-lg h-12 w-32 bg-white">
-                <button 
-                  className="w-10 h-full flex items-center justify-center text-gray-500 hover:text-[#CD2C58] hover:bg-gray-50 transition-colors rounded-l-lg"
-                  onClick={() => setQty(Math.max(1, qty - 1))}
-                >
-                  -
-                </button>
-                <span className="flex-1 text-center font-semibold text-gray-900">{qty}</span>
-                <button 
-                  className="w-10 h-full flex items-center justify-center text-gray-500 hover:text-[#CD2C58] hover:bg-gray-50 transition-colors rounded-r-lg"
-                  onClick={() => setQty(qty + 1)}
-                >
-                  +
-                </button>
-              </div>
+          <div className="flex gap-4">
+            <button 
+              onClick={handleAddToCart}
+              disabled={adding || !isAvailable}
+              className={`flex-1 py-4 px-6 rounded-xl font-bold text-white flex items-center justify-center gap-2 shadow-lg transition-all ${
+                !isAvailable 
+                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed shadow-none' 
+                  : 'bg-[#CD2C58] hover:bg-[#b02248]'
+              }`}
+            >
+              {adding ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : isAvailable ? (
+                <>
+                  <ShoppingBag className="w-5 h-5" /> Add to Cart & Rent
+                </>
+              ) : (
+                'Currently Out of Stock'
+              )}
+            </button>
 
-              {/* Add to Cart */}
-              <button 
-                className="flex-1 h-12 bg-[#CD2C58] text-white rounded-lg font-semibold shadow-md shadow-[#CD2C58]/20 hover:bg-[#E06B80] hover:-translate-y-0.5 hover:shadow-lg hover:shadow-[#CD2C58]/30 transition-all flex items-center justify-center gap-2"
-                onClick={() => setShowConfigModal(true)}
-              >
-                Configure & Add to Cart
-              </button>
-
-              <button className="w-12 h-12 flex items-center justify-center border border-gray-300 rounded-lg text-gray-600 hover:text-[#CD2C58] hover:border-[#CD2C58] hover:bg-red-50 transition-all">
-                <Heart className="w-5 h-5" />
-              </button>
-              
-              <button className="w-12 h-12 flex items-center justify-center border border-gray-300 rounded-lg text-gray-600 hover:text-[#CD2C58] hover:border-[#CD2C58] hover:bg-blue-50 transition-all">
-                <GitCompare className="w-5 h-5" />
-              </button>
-            </div>
+            <button 
+              onClick={toggleWishlist}
+              className={`p-4 rounded-xl border border-gray-300 transition-colors flex items-center justify-center ${
+                isWishlisted ? 'bg-red-50 border-red-200 text-[#CD2C58]' : 'hover:bg-gray-50 text-gray-600'
+              }`}
+            >
+              <Heart className={`w-5 h-5 ${isWishlisted ? 'fill-current' : ''}`} />
+            </button>
           </div>
         </div>
       </div>
-
-      {/* Configure Options Modal */}
-      {showConfigModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-            <div className="p-6 border-b border-gray-100 flex items-center justify-between">
-              <h3 className="text-xl font-bold text-gray-900">Configure Options</h3>
-              <button 
-                onClick={() => setShowConfigModal(false)}
-                className="text-gray-400 hover:text-gray-700 transition-colors"
-              >
-                <X className="w-6 h-6" />
-              </button>
-            </div>
-            
-            <div className="p-6">
-              <div className="mb-6">
-                <h4 className="text-sm font-semibold text-gray-900 mb-3">Color</h4>
-                <div className="flex flex-wrap gap-2">
-                  {product.variants.map(v => (
-                    <button
-                      key={v}
-                      onClick={() => setSelectedVariant(v)}
-                      className={`px-4 py-2 rounded-lg text-sm font-medium border transition-all ${
-                        selectedVariant === v 
-                          ? 'border-[#CD2C58] bg-[#FFE6D4] text-[#CD2C58]' 
-                          : 'border-gray-200 text-gray-700 hover:border-gray-300 bg-white'
-                      }`}
-                    >
-                      {v}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              
-              <div className="mb-6">
-                <h4 className="text-sm font-semibold text-gray-900 mb-3">Add-ons</h4>
-                <label className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:border-[#CD2C58] transition-colors">
-                  <input type="checkbox" className="w-4 h-4 text-[#CD2C58] rounded border-gray-300 focus:ring-[#CD2C58]" />
-                  <span className="text-sm text-gray-700 font-medium">Extended Warranty (+₹5/day)</span>
-                </label>
-              </div>
-
-              <button 
-                className="w-full py-3 bg-[#CD2C58] text-white rounded-lg font-semibold hover:bg-[#E06B80] transition-colors"
-                onClick={() => {
-                  alert('Added to cart!');
-                  setShowConfigModal(false);
-                }}
-              >
-                Confirm & Add to Cart
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

@@ -22,6 +22,17 @@ const findUserById = async (id) => {
 };
 
 /**
+ * Find all users (excludes password)
+ */
+const findAllUsers = async () => {
+  const users = await User.findAll({
+    attributes: { exclude: ['password', 'reset_password_token', 'reset_password_expires'] },
+    order: [['created_at', 'DESC']],
+  });
+  return users.map(u => u.toJSON());
+};
+
+/**
  * Create a new user with optional role (defaults to CUSTOMER)
  */
 const createUser = async ({ name, email, hashedPassword, role = 'CUSTOMER' }) => {
@@ -108,6 +119,7 @@ const resetUserPassword = async (userInstance, newHashedPassword) => {
 module.exports = {
   findUserByEmail,
   findUserById,
+  findAllUsers,
   createUser,
   updateUserProfile,
   setResetPasswordToken,

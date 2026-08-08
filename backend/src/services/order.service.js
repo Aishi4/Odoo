@@ -331,6 +331,37 @@ const getAllOrdersForAdmin = async (filters = {}) => {
   return orders.map((o) => o.toJSON());
 };
 
+/**
+ * Update order status for Admin & Vendor
+ */
+const updateOrderStatus = async (orderId, newStatus) => {
+  const order = await Order.findByPk(orderId);
+  if (!order) {
+    throw new AppError('Order not found', 404);
+  }
+
+  const validStatuses = [
+    'PENDING_PAYMENT',
+    'CONFIRMED',
+    'READY_FOR_PICKUP',
+    'PICKED_UP',
+    'ACTIVE',
+    'RETURN_PENDING',
+    'RETURNED',
+    'COMPLETED',
+    'CANCELLED',
+  ];
+
+  if (!validStatuses.includes(newStatus)) {
+    throw new AppError('Invalid order status', 400);
+  }
+
+  order.status = newStatus;
+  await order.save();
+
+  return await getOrderDetailsById(order.id);
+};
+
 module.exports = {
   createOrderFromCart,
   getOrderDetailsById,
@@ -338,4 +369,5 @@ module.exports = {
   getCustomerOrderById,
   cancelOrder,
   getAllOrdersForAdmin,
+  updateOrderStatus,
 };

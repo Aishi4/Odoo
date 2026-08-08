@@ -7,10 +7,11 @@ const returnController = require('../controllers/return.controller');
 const lateFeeController = require('../controllers/late_fee.controller');
 const { authenticateToken, authorizeRoles } = require('../middleware/auth.middleware');
 
-router.use(authenticateToken, authorizeRoles('ADMIN'));
+router.use(authenticateToken, authorizeRoles('ADMIN', 'VENDOR'));
 
-// Admin Orders Inspection
+// Admin Orders Inspection & Status Actions
 router.get('/orders', adminOrderController.getAllOrders);
+router.put('/orders/:id/status', adminOrderController.updateOrderStatus);
 
 // Admin Payments & Security Deposits Inspection
 router.get('/payments', paymentController.getAllAdminPayments);

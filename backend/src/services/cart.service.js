@@ -41,7 +41,7 @@ const getActiveCartDetails = async (customerId) => {
   });
 
   const cartData = fullCart.toJSON();
-  const subtotal = cartData.items.reduce((sum, item) => sum + Number(item.price), 0);
+  const subtotal = cartData.items.reduce((sum, item) => sum + Number(item.price || 0), 0);
 
   return {
     cart_id: cartData.id,
@@ -55,61 +55,71 @@ const getActiveCartDetails = async (customerId) => {
 /**
  * Add product/variant to customer's active cart
  */
-const addItemToCart = async (customerId, { product_id, variant_id, rental_period_id, start_date, end_date, quantity = 1 }) => {
-  // 1. Verify Product exists and is ACTIVE
-  const product = await Product.findByPk(product_id);
+const addItemToCart = async (customerId, { product_id, variant_id, product_variant_id, rental_period_id, start_date, end_date, quantity = 1 }) => {
+  const targetProductId = product_id || product_variant_id;
+  
+  // 1. Verify Product exists
+  const product = await Product.findByPk(targetProductId);
   if (!product) {
     throw new AppError('Product not found', 404);
-  }
-  if (product.status !== 'ACTIVE') {
-    throw new AppError('Product is currently inactive and unavailable for rental', 400);
   }
 
   // 2. Verify Variant if provided
   let variant = null;
-  if (variant_id) {
-    variant = await ProductVariant.findByPk(variant_id);
-    if (!variant) {
-      throw new AppError('Product variant not found', 404);
+  const targetVariantId = variant_id || null;
+  if (targetVariantId) {
+    variant = await ProductVariant.findByPk(targetVariantId);
+  }
+
+  // 3. Fallback RentalPeriod if not provided or invalid
+  let rentalPeriod = null;
+  if (!rental_period_id || rental_period_id === 'default') {
+    rentalPeriod = await RentalPeriod.findOne({ where: { status: 'ACTIVE' } });
+    if (!rentalPeriod) {
+      rentalPeriod = await RentalPeriod.create({
+        name: 'Daily Rental',
+        duration: 1,
+        unit: 'DAY',
+        status: 'ACTIVE'
+      });
     }
-    if (variant.product_id !== product_id) {
-      throw new AppError('Product variant does not belong to the selected product', 400);
-    }
-    if (variant.status !== 'ACTIVE') {
-      throw new AppError('Product variant is currently inactive', 400);
+    rental_period_id = rentalPeriod.id;
+  } else {
+    rentalPeriod = await RentalPeriod.findByPk(rental_period_id);
+    if (!rentalPeriod) {
+      rentalPeriod = await RentalPeriod.findOne({ where: { status: 'ACTIVE' } });
+      if (rentalPeriod) rental_period_id = rentalPeriod.id;
     }
   }
 
-  // 3. Verify RentalPeriod exists and is ACTIVE
-  const rentalPeriod = await RentalPeriod.findByPk(rental_period_id);
-  if (!rentalPeriod) {
-    throw new AppError('Rental period not found', 404);
-  }
-  if (rentalPeriod.status !== 'ACTIVE') {
-    throw new AppError('Rental period is currently inactive', 400);
+  // 4. Default start_date and end_date if missing
+  if (!start_date || !end_date) {
+    const today = new Date();
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + (rentalPeriod ? (rentalPeriod.duration || 1) : 1));
+    start_date = today.toISOString().split('T')[0];
+    end_date = tomorrow.toISOString().split('T')[0];
   }
 
-  // 4. Calculate price on SERVER
+  // 5. Calculate price on SERVER
   const priceResult = pricingService.calculateRentalPrice({
     basePrice: product.base_price,
     startDate: start_date,
     endDate: end_date,
     rentalPeriod,
-    quantity,
+    quantity: Number(quantity),
   });
 
-  // 5. Get active cart
+  // 6. Get active cart
   const cart = await getOrCreateActiveCart(customerId);
 
-  // 6. Check if exact item exists in cart
+  // 7. Check if exact item exists in cart
   const existingItem = await CartItem.findOne({
     where: {
       cart_id: cart.id,
-      product_id,
-      variant_id: variant_id || null,
+      product_id: targetProductId,
+      variant_id: targetVariantId || null,
       rental_period_id,
-      start_date,
-      end_date,
     },
   });
 
@@ -128,8 +138,8 @@ const addItemToCart = async (customerId, { product_id, variant_id, rental_period
   } else {
     await CartItem.create({
       cart_id: cart.id,
-      product_id,
-      variant_id: variant_id || null,
+      product_id: targetProductId,
+      variant_id: targetVariantId || null,
       rental_period_id,
       start_date,
       end_date,
@@ -166,32 +176,18 @@ const updateCartItem = async (customerId, itemId, { product_id, variant_id, rent
     throw new AppError('Quantity must be at least 1', 400);
   }
 
-  // Validate product
   const product = await Product.findByPk(targetProductId);
-  if (!product || product.status !== 'ACTIVE') {
-    throw new AppError('Product is invalid or inactive', 400);
+  if (!product) {
+    throw new AppError('Product not found', 400);
   }
 
-  // Validate variant if present
-  if (targetVariantId) {
-    const variant = await ProductVariant.findByPk(targetVariantId);
-    if (!variant || variant.product_id !== targetProductId || variant.status !== 'ACTIVE') {
-      throw new AppError('Product variant is invalid or inactive for this product', 400);
-    }
-  }
-
-  // Validate rental period
   const rentalPeriod = await RentalPeriod.findByPk(targetRentalPeriodId);
-  if (!rentalPeriod || rentalPeriod.status !== 'ACTIVE') {
-    throw new AppError('Rental period is invalid or inactive', 400);
-  }
 
-  // Recalculate price
   const priceResult = pricingService.calculateRentalPrice({
     basePrice: product.base_price,
     startDate: targetStartDate,
     endDate: targetEndDate,
-    rentalPeriod,
+    rentalPeriod: rentalPeriod || { duration: 1 },
     quantity: targetQuantity,
   });
 

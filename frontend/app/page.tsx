@@ -1,61 +1,143 @@
 "use client";
-import React, { useState, Suspense } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { Search, ChevronRight, Check, Heart, X } from "lucide-react";
+import { Search, ChevronRight, Check, Heart, X, Loader2, ShoppingBag, AlertTriangle } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
+import { catalogApi, cartApi } from "@/lib/api";
 
 function CatalogContent() {
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
   const [selectedColors, setSelectedColors] = useState<string[]>([]);
   const [selectedDurations, setSelectedDurations] = useState<string[]>([]);
   const [hideOutOfStock, setHideOutOfStock] = useState(false);
   const [minPrice, setMinPrice] = useState<number>(0);
-  const [maxPrice, setMaxPrice] = useState<number>(100);
+  const [maxPrice, setMaxPrice] = useState<number>(5000);
 
-  const toggleBrand = (brand: string) => setSelectedBrands(prev => prev.includes(brand) ? prev.filter(b => b !== brand) : [...prev, brand]);
-  const toggleColor = (color: string) => setSelectedColors(prev => prev.includes(color) ? prev.filter(c => c !== color) : [...prev, color]);
-  const toggleDuration = (duration: string) => setSelectedDurations(prev => prev.includes(duration) ? prev.filter(d => d !== duration) : [...prev, duration]);
+  const [products, setProducts] = useState<any[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [wishlistIds, setWishlistIds] = useState<string[]>([]);
 
   const searchParams = useSearchParams();
   const router = useRouter();
   const query = searchParams.get('q')?.toLowerCase() || '';
+  const categoryParam = searchParams.get('category');
+
+  useEffect(() => {
+    if (categoryParam) {
+      setSelectedCategories([categoryParam]);
+    }
+  }, [categoryParam]);
+
+  useEffect(() => {
+    const loadProducts = async () => {
+      setLoading(true);
+      const res = await catalogApi.getProducts();
+      setLoading(false);
+      if (res.success && Array.isArray(res.data)) {
+        const mapped = res.data.map((p: any) => ({
+          id: p.id,
+          name: p.name,
+          price: Number(p.base_price) || 1500,
+          period: 'day',
+          img: p.image_url || 'https://images.unsplash.com/photo-1505843490538-5133c6c7d0e1?w=500&q=80',
+          variants: ['Standard'],
+          stock: p.status === 'ACTIVE' && p.is_active !== false,
+          status: p.status || (p.is_active !== false ? 'ACTIVE' : 'INACTIVE'),
+          category: p.category || 'Furniture',
+          description: p.description || '',
+        }));
+        setProducts(mapped);
+      }
+    };
+    loadProducts();
+
+    // Sync initial wishlist
+    try {
+      const list = JSON.parse(localStorage.getItem('wishlist') || '[]');
+      if (Array.isArray(list)) {
+        setWishlistIds(list.map((item: any) => item.id));
+      }
+    } catch (e) {}
+  }, []);
+
+  const toggleWishlist = (product: any, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    let list: any[] = [];
+    try {
+      list = JSON.parse(localStorage.getItem('wishlist') || '[]');
+      if (!Array.isArray(list)) list = [];
+    } catch (err) {
+      list = [];
+    }
+
+    const exists = list.some((item) => item.id === product.id);
+    let updated = [];
+    if (exists) {
+      updated = list.filter((item) => item.id !== product.id);
+    } else {
+      updated = [...list, product];
+    }
+
+    localStorage.setItem('wishlist', JSON.stringify(updated));
+    setWishlistIds(updated.map((item) => item.id));
+    window.dispatchEvent(new Event('wishlistUpdated'));
+  };
+
+  const handleQuickAdd = async (product: any, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!product.stock) return;
+
+    const res = await cartApi.addItem({
+      product_id: product.id,
+      quantity: 1,
+    });
+
+    if (!res.success) {
+      try {
+        const localCart = JSON.parse(localStorage.getItem('cart') || '[]');
+        const existing = localCart.find((i: any) => i.id === product.id);
+        if (existing) {
+          existing.quantity += 1;
+        } else {
+          localCart.push({ ...product, quantity: 1 });
+        }
+        localStorage.setItem('cart', JSON.stringify(localCart));
+      } catch (err) {}
+    }
+
+    window.dispatchEvent(new Event('cartUpdated'));
+    router.push('/cart');
+  };
+
+  const toggleCategory = (category: string) => setSelectedCategories(prev => prev.includes(category) ? prev.filter(c => c !== category) : [...prev, category]);
+  const toggleBrand = (brand: string) => setSelectedBrands(prev => prev.includes(brand) ? prev.filter(b => b !== brand) : [...prev, brand]);
 
   const clearAllFilters = () => {
+    setSelectedCategories([]);
     setSelectedBrands([]);
     setSelectedColors([]);
     setSelectedDurations([]);
     setHideOutOfStock(false);
     setMinPrice(0);
-    setMaxPrice(100);
-    if (query) {
+    setMaxPrice(5000);
+    if (query || categoryParam) {
       router.push('/');
     }
   };
 
-  const products = [
-    { id: 1, name: 'Premium Office Chair', price: 15, period: 'day', img: 'https://images.unsplash.com/photo-1505843490538-5133c6c7d0e1?w=500&q=80', variants: ['Black', 'Grey', 'White'], stock: true },
-    { id: 2, name: 'MacBook Pro 16"', price: 45, period: 'day', img: 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=500&q=80', variants: ['Space Gray', 'Silver'], stock: true },
-    { id: 3, name: 'Sony A7III Camera', price: 30, period: 'day', img: 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=500&q=80', variants: ['Black'], stock: false },
-    { id: 4, name: '4K Monitor 27"', price: 10, period: 'day', img: 'https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?w=500&q=80', variants: ['Black', 'Silver'], stock: true },
-    { id: 5, name: 'Ergonomic Desk', price: 20, period: 'day', img: 'https://images.unsplash.com/photo-1518455027359-f3f8164ba6bd?w=500&q=80', variants: ['Oak', 'Walnut', 'White'], stock: true },
-    { id: 6, name: 'Studio Microphone', price: 12, period: 'day', img: 'https://images.unsplash.com/photo-1590602847861-f357a9332bbc?w=500&q=80', variants: ['Black'], stock: true },
-    { id: 7, name: 'iPad Pro 12.9"', price: 25, period: 'day', img: 'https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?w=500&q=80', variants: ['Space Gray', 'Silver'], stock: true },
-    { id: 8, name: 'Wireless Headphones', price: 8, period: 'day', img: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500&q=80', variants: ['Black', 'White', 'Blue'], stock: false },
-    { id: 9, name: 'Standing Desk Converter', price: 18, period: 'day', img: 'https://images.unsplash.com/photo-1595514535415-0816911c42de?w=500&q=80', variants: ['Black', 'White'], stock: true },
-    { id: 10, name: 'Logitech MX Master 3', price: 5, period: 'day', img: 'https://images.unsplash.com/photo-1586816879360-004f5b0c51e3?w=500&q=80', variants: ['Graphite', 'Mid Grey'], stock: true },
-  ];
-
-  const colorMap: Record<string, string> = {
-    '#000000': 'Black', '#FFFFFF': 'White', '#9CA3AF': 'Grey',
-    '#EF4444': 'Red', '#3B82F6': 'Blue', '#10B981': 'Green'
-  };
+  const categoriesList = ['Furniture', 'Electronics', 'Photography', 'Office', 'Vehicles'];
 
   const filteredProducts = products.filter(p => {
     if (query && !p.name.toLowerCase().includes(query)) return false;
+    if (selectedCategories.length > 0 && !selectedCategories.includes(p.category)) return false;
     if (selectedBrands.length > 0 && !selectedBrands.some(b => p.name.includes(b))) return false;
-    if (selectedColors.length > 0 && !selectedColors.some(c => p.variants.includes(colorMap[c]))) return false;
     if (p.price < minPrice || p.price > maxPrice) return false;
     if (hideOutOfStock && !p.stock) return false;
     return true;
@@ -85,119 +167,48 @@ function CatalogContent() {
               </button>
             </div>
             
-            {/* Brand Filter */}
+            {/* Category Filter */}
             <div className="border-t border-gray-200 py-6">
-              <h3 className="font-semibold text-gray-900 mb-4">Brand</h3>
-              <div className="relative mb-4">
-                <input 
-                  type="text" 
-                  placeholder="Search brand..." 
-                  className="w-full bg-gray-50 border border-gray-200 rounded-lg py-2 pl-9 pr-3 text-sm focus:outline-none focus:border-[#CD2C58] focus:ring-1 focus:ring-[#CD2C58]" 
-                />
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-              </div>
+              <h3 className="font-semibold text-gray-900 mb-4">Categories</h3>
               <div className="space-y-3 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
-                {['Apple', 'Sony', 'Herman Miller', 'Dell', 'Logitech', 'Samsung', 'Bose'].map((brand) => {
-                  const isSelected = selectedBrands.includes(brand);
+                {categoriesList.map((cat) => {
+                  const isSelected = selectedCategories.includes(cat);
+                  const count = products.filter(p => p.category === cat).length;
+
                   return (
-                    <label key={brand} className="flex items-center gap-3 cursor-pointer group" onClick={(e) => { e.preventDefault(); toggleBrand(brand); }}>
-                      <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${isSelected ? 'bg-[#CD2C58] border-[#CD2C58]' : 'border-gray-300 group-hover:border-[#CD2C58]'}`}>
-                        {isSelected && <Check className="w-3.5 h-3.5 text-white" />}
+                    <label key={cat} className="flex items-center justify-between cursor-pointer group" onClick={(e) => { e.preventDefault(); toggleCategory(cat); }}>
+                      <div className="flex items-center gap-3">
+                        <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${isSelected ? 'bg-[#CD2C58] border-[#CD2C58]' : 'border-gray-300 group-hover:border-[#CD2C58]'}`}>
+                          {isSelected && <Check className="w-3.5 h-3.5 text-white" />}
+                        </div>
+                        <span className={`text-sm ${isSelected ? 'font-bold text-[#CD2C58]' : 'text-gray-700 group-hover:text-gray-900'}`}>{cat}</span>
                       </div>
-                      <span className="text-sm text-gray-700 group-hover:text-gray-900">{brand}</span>
+                      <span className="text-xs text-gray-400 font-medium">({count})</span>
                     </label>
                   );
                 })}
               </div>
             </div>
 
-            {/* Color Filter */}
+            {/* Price Filter */}
             <div className="border-t border-gray-200 py-6">
-              <h3 className="font-semibold text-gray-900 mb-4">Color</h3>
-              <div className="flex flex-wrap gap-3">
-                {[
-                  { hex: '#000000', name: 'Black' },
-                  { hex: '#FFFFFF', name: 'White', border: true },
-                  { hex: '#9CA3AF', name: 'Grey' },
-                  { hex: '#EF4444', name: 'Red' },
-                  { hex: '#3B82F6', name: 'Blue' },
-                  { hex: '#10B981', name: 'Green' }
-                ].map((color) => {
-                  const isSelected = selectedColors.includes(color.hex);
-                  return (
-                    <button 
-                      key={color.hex}
-                      title={color.name}
-                      onClick={() => toggleColor(color.hex)}
-                      className={`w-8 h-8 rounded-full flex items-center justify-center transition-transform hover:scale-110 ${color.border ? 'border border-gray-300' : ''} ${isSelected ? 'ring-2 ring-offset-2 ring-[#CD2C58]' : ''}`}
-                      style={{ backgroundColor: color.hex }}
-                    >
-                      {isSelected && <Check className="w-4 h-4 text-white" />}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Duration Filter */}
-            <div className="border-t border-gray-200 py-6">
-              <h3 className="font-semibold text-gray-900 mb-4">Duration</h3>
-              <div className="space-y-3">
-                {['1 Month', '6 Month', '1 Year', '2 Years', '3 Years'].map((dur) => {
-                  const isSelected = selectedDurations.includes(dur);
-                  return (
-                    <label key={dur} className="flex items-center gap-3 cursor-pointer group" onClick={(e) => { e.preventDefault(); toggleDuration(dur); }}>
-                      <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${isSelected ? 'bg-[#CD2C58] border-[#CD2C58]' : 'border-gray-300 group-hover:border-[#CD2C58]'}`}>
-                        {isSelected && <Check className="w-3.5 h-3.5 text-white" />}
-                      </div>
-                      <span className="text-sm text-gray-700 group-hover:text-gray-900">{dur}</span>
-                    </label>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Price Range Filter */}
-            <div className="border-t border-gray-200 py-6">
-              <h3 className="font-semibold text-gray-900 mb-4">Price Range</h3>
+              <h3 className="font-semibold text-gray-900 mb-4">Max Base Price (₹)</h3>
               <div className="px-2">
-                <div className="relative mb-6">
-                  <Slider 
-                    defaultValue={[100]}
-                    value={[maxPrice]}
-                    max={100}
-                    step={1}
-                    onValueChange={(val) => setMaxPrice(val[0])}
-                  />
-                  <div className="flex justify-between text-xs text-gray-500 mt-2">
-                    <span>₹0</span>
-                    <span>₹100</span>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between gap-4">
-                  <div className="flex-1 bg-gray-50 border border-gray-200 rounded-md py-1.5 px-3 text-center">
-                    <span className="text-xs text-gray-500 block mb-0.5">Min (₹)</span>
-                    <input 
-                      type="number" 
-                      value={minPrice} 
-                      onChange={(e) => setMinPrice(Number(e.target.value))}
-                      className="w-full bg-transparent text-sm font-medium text-gray-900 text-center focus:outline-none"
-                    />
-                  </div>
-                  <div className="text-gray-400">-</div>
-                  <div className="flex-1 bg-gray-50 border border-gray-200 rounded-md py-1.5 px-3 text-center">
-                    <span className="text-xs text-gray-500 block mb-0.5">Max (₹)</span>
-                    <input 
-                      type="number" 
-                      value={maxPrice} 
-                      onChange={(e) => setMaxPrice(Number(e.target.value))}
-                      className="w-full bg-transparent text-sm font-medium text-gray-900 text-center focus:outline-none"
-                    />
-                  </div>
+                <Slider 
+                  defaultValue={[5000]}
+                  value={[maxPrice]}
+                  max={5000}
+                  step={50}
+                  onValueChange={(val) => setMaxPrice(val[0])}
+                />
+                <div className="flex justify-between text-xs text-gray-500 mt-2">
+                  <span>₹0</span>
+                  <span className="font-bold text-gray-900">₹{maxPrice}</span>
                 </div>
               </div>
             </div>
             
+            {/* Hide Out of Stock Toggle */}
             <div className="border-t border-gray-200 py-6">
               <label className="flex items-center gap-3 cursor-pointer group" onClick={(e) => { e.preventDefault(); setHideOutOfStock(!hideOutOfStock); }}>
                  <div className={`w-10 h-6 rounded-full relative transition-colors ${hideOutOfStock ? 'bg-[#CD2C58]' : 'bg-gray-200 group-hover:bg-gray-300'}`}>
@@ -209,105 +220,106 @@ function CatalogContent() {
           </div>
         </aside>
 
-        {/* Product Grid */}
-        <div className="flex-1">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">All Rentals</h1>
-              <p className="text-sm text-gray-500 mt-1">
-                Showing {filteredProducts.length} of {products.length} products
-                {query && <span> (Searching for {query})</span>}
-              </p>
+        {/* Product Catalog Display */}
+        <main className="flex-1">
+          {loading ? (
+            <div className="py-20 text-center text-gray-500 flex flex-col items-center">
+              <Loader2 className="w-8 h-8 animate-spin text-[#CD2C58] mb-2" />
+              Loading equipment catalog...
             </div>
-            <div className="flex items-center gap-3">
-              <span className="text-sm text-gray-600">Sort by:</span>
-              <select className="bg-white border border-gray-200 rounded-md py-2 px-3 text-sm focus:outline-none focus:border-[#CD2C58] focus:ring-1 focus:ring-[#CD2C58]">
-                <option>Recommended</option>
-                <option>Price: Low to High</option>
-                <option>Price: High to Low</option>
-              </select>
+          ) : filteredProducts.length === 0 ? (
+            <div className="py-20 text-center bg-gray-50 rounded-2xl border border-gray-200 p-8">
+              <h3 className="text-lg font-bold text-gray-900 mb-1">No products found</h3>
+              <p className="text-sm text-gray-500 mb-4">Try clearing category or price filters.</p>
+              <button onClick={clearAllFilters} className="px-4 py-2 bg-[#CD2C58] text-white rounded-lg text-sm font-bold">
+                Reset All Filters
+              </button>
             </div>
-          </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredProducts.map((product) => {
+                const isWishlisted = wishlistIds.includes(product.id);
+                const isAvailable = product.stock;
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
-            {filteredProducts.length === 0 ? (
-              <div className="col-span-full py-12 text-center text-gray-500">
-                No products found matching your filters.
-              </div>
-            ) : filteredProducts.map(product => (
-              <div key={product.id} className="group bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-xl transition-all hover:border-[#E06B80] flex flex-col">
-                <div className="relative h-56 overflow-hidden bg-gray-50">
-                  {!product.stock && (
-                    <div className="absolute top-3 left-3 z-10 bg-white/90 backdrop-blur text-gray-900 text-xs font-bold px-2.5 py-1 rounded-md shadow-sm">
-                      Out of Stock
+                return (
+                  <div key={product.id} className="bg-white rounded-2xl border border-gray-200 overflow-hidden hover:shadow-lg transition-all group flex flex-col justify-between">
+                    <div className="relative h-56 bg-gray-100 overflow-hidden">
+                      <Image 
+                        src={product.img} 
+                        alt={product.name} 
+                        fill 
+                        className={`object-cover group-hover:scale-105 transition-transform duration-300 ${!isAvailable ? 'grayscale opacity-75' : ''}`}
+                      />
+                      
+                      {/* Wishlist Button */}
+                      <button 
+                        onClick={(e) => toggleWishlist(product, e)}
+                        className={`absolute top-3 right-3 p-2 rounded-full shadow-md transition-all z-10 ${isWishlisted ? 'bg-[#CD2C58] text-white' : 'bg-white/90 text-gray-700 hover:text-[#CD2C58]'}`}
+                      >
+                        <Heart className={`w-4 h-4 ${isWishlisted ? 'fill-current' : ''}`} />
+                      </button>
+
+                      {/* Category Badge */}
+                      <span className="absolute top-3 left-3 bg-black/60 backdrop-blur-md text-white text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider">
+                        {product.category}
+                      </span>
+
+                      {/* Out of Stock Overlay Badge */}
+                      {!isAvailable && (
+                        <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px] flex items-center justify-center">
+                          <span className="bg-red-600 text-white text-xs font-black px-3 py-1.5 rounded-md uppercase tracking-wider shadow-lg flex items-center gap-1.5">
+                            <AlertTriangle className="w-3.5 h-3.5" /> Out of Stock
+                          </span>
+                        </div>
+                      )}
                     </div>
-                  )}
-                  <button className="absolute top-3 right-3 z-10 p-2 bg-white/90 backdrop-blur rounded-full text-gray-400 hover:text-[#CD2C58] hover:bg-white transition-all shadow-sm">
-                    <Heart className="w-4 h-4" />
-                  </button>
-                  <Link href={`/product/${product.id}`} className="block h-full relative">
-                    <Image 
-                      src={product.img} 
-                      alt={product.name}
-                      fill
-                      className={`object-cover transition-transform duration-500 group-hover:scale-105 ${!product.stock ? 'opacity-50 grayscale' : ''}`}
-                    />
-                  </Link>
-                </div>
-                
-                <div className="p-5 flex flex-col flex-1">
-                  <div className="mb-1 text-xs text-gray-500 font-medium uppercase tracking-wider">
-                    {product.variants.length} Colors
+
+                    <div className="p-5 flex-1 flex flex-col justify-between">
+                      <div>
+                        <h3 className="font-bold text-gray-900 text-base group-hover:text-[#CD2C58] transition-colors line-clamp-1">
+                          {product.name}
+                        </h3>
+                        <p className="text-xs text-gray-500 mt-1 line-clamp-2">{product.description || 'Premium rental equipment'}</p>
+                      </div>
+
+                      <div className="mt-6 pt-4 border-t border-gray-100 flex items-center justify-between">
+                        <div>
+                          <span className="text-xs text-gray-400 block font-medium">Daily Price</span>
+                          <span className="text-xl font-black text-[#CD2C58]">₹{product.price}</span>
+                          <span className="text-xs text-gray-500">/day</span>
+                        </div>
+
+                        {isAvailable ? (
+                          <button 
+                            onClick={(e) => handleQuickAdd(product, e)}
+                            className="px-4 py-2 bg-[#CD2C58] text-white text-xs font-bold rounded-xl hover:bg-[#b02248] transition-colors shadow-sm flex items-center gap-1.5"
+                          >
+                            <ShoppingBag className="w-3.5 h-3.5" /> Rent Now
+                          </button>
+                        ) : (
+                          <button 
+                            disabled 
+                            className="px-3 py-2 bg-gray-200 text-gray-500 text-xs font-bold rounded-xl cursor-not-allowed"
+                          >
+                            Unavailable
+                          </button>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                  <Link href={`/product/${product.id}`} className="block mb-2 group-hover:text-[#CD2C58] transition-colors">
-                    <h3 className="text-lg font-bold text-gray-900 line-clamp-1">{product.name}</h3>
-                  </Link>
-                  
-                  <div className="flex items-baseline gap-1 mb-4">
-                    <span className="text-2xl font-black text-[#CD2C58]">₹{product.price}</span>
-                    <span className="text-sm text-gray-500 font-medium">/ {product.period}</span>
-                  </div>
-                  
-                  <div className="mt-auto pt-4 border-t border-gray-100 flex gap-3">
-                    <button 
-                      className={`flex-1 py-2.5 rounded-lg font-medium text-sm transition-all ${
-                        product.stock 
-                          ? 'bg-[#CD2C58] text-white hover:bg-[#E06B80] shadow-md shadow-[#CD2C58]/20 hover:shadow-lg hover:shadow-[#CD2C58]/30 hover:-translate-y-0.5' 
-                          : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                      }`}
-                      disabled={!product.stock}
-                    >
-                      Add to Cart
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-          
-          {/* Pagination */}
-          <div className="mt-12 flex justify-center items-center gap-2">
-            <button className="w-10 h-10 rounded-lg border border-gray-200 flex items-center justify-center text-gray-500 hover:border-[#CD2C58] hover:text-[#CD2C58] transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled>
-              <ChevronRight className="w-5 h-5 rotate-180" />
-            </button>
-            <button className="w-10 h-10 rounded-lg bg-[#CD2C58] text-white font-medium flex items-center justify-center shadow-md shadow-[#CD2C58]/20">1</button>
-            <button className="w-10 h-10 rounded-lg border border-gray-200 flex items-center justify-center text-gray-700 font-medium hover:border-[#CD2C58] hover:text-[#CD2C58] transition-colors">2</button>
-            <button className="w-10 h-10 rounded-lg border border-gray-200 flex items-center justify-center text-gray-700 font-medium hover:border-[#CD2C58] hover:text-[#CD2C58] transition-colors">3</button>
-            <span className="text-gray-400 px-1">...</span>
-            <button className="w-10 h-10 rounded-lg border border-gray-200 flex items-center justify-center text-gray-700 font-medium hover:border-[#CD2C58] hover:text-[#CD2C58] transition-colors">15</button>
-            <button className="w-10 h-10 rounded-lg border border-gray-200 flex items-center justify-center text-gray-500 hover:border-[#CD2C58] hover:text-[#CD2C58] transition-colors">
-              <ChevronRight className="w-5 h-5" />
-            </button>
-          </div>
-        </div>
+                );
+              })}
+            </div>
+          )}
+        </main>
       </div>
     </div>
   );
 }
 
-export default function Home() {
+export default function CatalogPage() {
   return (
-    <Suspense fallback={<div className="p-8 text-center">Loading catalog...</div>}>
+    <Suspense fallback={<div className="p-12 text-center text-gray-500">Loading catalog...</div>}>
       <CatalogContent />
     </Suspense>
   );
