@@ -1,18 +1,26 @@
 "use client";
 
 import React from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { Search, Heart, ShoppingCart, User, ChevronDown } from "lucide-react";
 
 export default function Navbar() {
   const pathname = usePathname();
+  const router = useRouter();
 
-  // Hide navbar on auth pages (login, register, forgot-password)
-  const isAuthPage = pathname?.includes("/login") || pathname?.includes("/register") || pathname?.includes("/forgot-password");
+  const isAuthPage = pathname === "/login" || pathname === "/register" || pathname === "/vendor-register" || pathname === "/forgot-password";
 
   if (isAuthPage) {
     return null;
   }
+
+  const handleSearch = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && e.currentTarget.value.trim() !== '') {
+      router.push(`/?q=${e.currentTarget.value.trim()}`);
+    } else if (e.key === 'Enter') {
+      router.push('/');
+    }
+  };
 
   return (
     <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-200">
@@ -34,6 +42,7 @@ export default function Navbar() {
             <input 
               type="text" 
               placeholder="Search products, brands..." 
+              onKeyDown={handleSearch}
               className="w-full bg-gray-100 rounded-full py-2.5 pl-12 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-[#E06B80] focus:bg-white transition-all"
             />
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-[#CD2C58]" />

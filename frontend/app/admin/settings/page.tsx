@@ -22,7 +22,7 @@ export default function AdminSettings() {
         <div>
           <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, marginBottom: '0.5rem' }}>Default Late Fee Rate (per hour)</label>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', maxWidth: '200px' }}>
-            <span style={{ fontSize: '1.125rem', fontWeight: 500 }}>$</span>
+            <span style={{ fontSize: '1.125rem', fontWeight: 500 }}>₹</span>
             <input type="number" className="input-field" defaultValue="10" />
           </div>
         </div>

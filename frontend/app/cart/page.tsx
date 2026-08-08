@@ -26,7 +26,7 @@ export default function Cart() {
               </div>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', alignItems: 'flex-end' }}>
-              <div style={{ fontSize: '1.25rem', fontWeight: 700 }}>$15.00</div>
+              <div style={{ fontSize: '1.25rem', fontWeight: 700 }}>₹15.00</div>
               <button style={{ color: 'var(--danger-color)', fontSize: '0.875rem', fontWeight: 500 }}>Remove</button>
             </div>
           </div>
@@ -39,21 +39,21 @@ export default function Cart() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '1.5rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '1.5rem' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
               <span style={{ color: 'var(--text-secondary)' }}>Subtotal</span>
-              <span style={{ fontWeight: 500 }}>$15.00</span>
+              <span style={{ fontWeight: 500 }}>₹15.00</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
               <span style={{ color: 'var(--text-secondary)' }}>Delivery Fee</span>
-              <span style={{ fontWeight: 500 }}>$5.00</span>
+              <span style={{ fontWeight: 500 }}>₹5.00</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
               <span style={{ color: 'var(--text-secondary)' }}>Security Deposit</span>
-              <span style={{ fontWeight: 500 }}>$50.00</span>
+              <span style={{ fontWeight: 500 }}>₹50.00</span>
             </div>
           </div>
           
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2rem', fontSize: '1.25rem', fontWeight: 700 }}>
             <span>Total</span>
-            <span>$70.00</span>
+            <span>₹70.00</span>
           </div>
 
           <a href="/checkout" className="btn-primary" style={{ width: '100%', textAlign: 'center' }}>Proceed to Checkout</a>

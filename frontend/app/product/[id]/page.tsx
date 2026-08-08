@@ -1,15 +1,23 @@
 "use client";
 import React, { useState } from 'react';
-import { Heart, GitCompare, Star, ChevronRight, X, Calendar, Clock } from 'lucide-react';
+import { Calendar as CalendarIcon, GitCompare, Heart, ChevronRight, X, Star } from 'lucide-react';
+import { format } from 'date-fns';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Button } from '@/components/ui/button';
+import { Calendar } from '@/components/ui/calendar';
+import Link from "next/link";
 
-export default function ProductDetail({ params }: { params: { id: string } }) {
+export default function ProductDetail({ params }: { params: Promise<{ id: string }> }) {
+  const unwrappedParams = React.use(params);
   const [showConfigModal, setShowConfigModal] = useState(false);
   const [qty, setQty] = useState(1);
   const [selectedVariant, setSelectedVariant] = useState('Black');
+  const [startDate, setStartDate] = useState<Date>();
+  const [endDate, setEndDate] = useState<Date>();
 
   // Mock product data
   const product = { 
-    id: params.id, 
+    id: unwrappedParams.id, 
     name: 'Premium Office Chair', 
     code: 'PRD-001-OC',
     rating: 4.8,
@@ -22,12 +30,12 @@ export default function ProductDetail({ params }: { params: { id: string } }) {
   };
 
   return (
-    <div className="max-w-[1280px] mx-auto px-6 py-8">
+    <div className="max-w-7xl mx-auto px-6 py-8">
       {/* Breadcrumb */}
       <div className="text-sm text-gray-500 mb-8 flex items-center gap-2">
-        <a href="/" className="hover:text-[#CD2C58]">Home</a>
+        <Link href="/" className="hover:text-[#CD2C58]">Home</Link>
         <ChevronRight className="w-4 h-4" />
-        <a href="/" className="hover:text-[#CD2C58]">Catalog</a>
+        <Link href="/product" className="hover:text-[#CD2C58]">Products</Link>
         <ChevronRight className="w-4 h-4" />
         <span className="text-gray-900 font-medium">{product.name}</span>
       </div>
@@ -39,7 +47,7 @@ export default function ProductDetail({ params }: { params: { id: string } }) {
           <div className="absolute top-4 left-4 bg-[#FFE6D4] text-[#CD2C58] text-xs font-bold px-3 py-1 rounded-full">
             In Stock
           </div>
-          <img 
+          <img
             src={product.img} 
             alt={product.name} 
             className="w-full max-w-md h-auto object-contain drop-shadow-xl" 
@@ -65,7 +73,7 @@ export default function ProductDetail({ params }: { params: { id: string } }) {
           </div>
 
           <div className="flex items-baseline gap-2 mb-6">
-            <span className="text-4xl font-black text-[#CD2C58]">${product.price}</span>
+            <span className="text-4xl font-black text-[#CD2C58]">₹{product.price}</span>
             <span className="text-lg text-gray-500 font-medium">/ {product.period}</span>
           </div>
           
@@ -75,22 +83,52 @@ export default function ProductDetail({ params }: { params: { id: string } }) {
 
           <div className="bg-gray-50 rounded-xl p-6 mb-8 border border-gray-100">
             <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-              <Calendar className="w-5 h-5 text-[#CD2C58]" /> Rental Period
+              <CalendarIcon className="w-5 h-5 text-[#CD2C58]" /> Rental Period
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Start Date-Time</label>
-                <input 
-                  type="datetime-local" 
-                  className="w-full bg-white border border-gray-300 rounded-lg py-2.5 px-4 text-sm focus:outline-none focus:border-[#CD2C58] focus:ring-1 focus:ring-[#CD2C58]" 
-                />
+              <div className="flex flex-col gap-2">
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider">Start Date</label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant={"outline"}
+                      className={`w-full justify-start text-left font-normal py-5 ${!startDate && "text-gray-500"}`}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {startDate ? format(startDate, "PPP") : <span>Pick a date</span>}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={startDate}
+                      onSelect={setStartDate}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
               </div>
-              <div>
-                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">End Date-Time</label>
-                <input 
-                  type="datetime-local" 
-                  className="w-full bg-white border border-gray-300 rounded-lg py-2.5 px-4 text-sm focus:outline-none focus:border-[#CD2C58] focus:ring-1 focus:ring-[#CD2C58]" 
-                />
+              <div className="flex flex-col gap-2">
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider">End Date</label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant={"outline"}
+                      className={`w-full justify-start text-left font-normal py-5 ${!endDate && "text-gray-500"}`}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {endDate ? format(endDate, "PPP") : <span>Pick a date</span>}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={endDate}
+                      onSelect={setEndDate}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
               </div>
             </div>
           </div>
@@ -172,7 +210,7 @@ export default function ProductDetail({ params }: { params: { id: string } }) {
                 <h4 className="text-sm font-semibold text-gray-900 mb-3">Add-ons</h4>
                 <label className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:border-[#CD2C58] transition-colors">
                   <input type="checkbox" className="w-4 h-4 text-[#CD2C58] rounded border-gray-300 focus:ring-[#CD2C58]" />
-                  <span className="text-sm text-gray-700 font-medium">Extended Warranty (+$5/day)</span>
+                  <span className="text-sm text-gray-700 font-medium">Extended Warranty (+₹5/day)</span>
                 </label>
               </div>
 
