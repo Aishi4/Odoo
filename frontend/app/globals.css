@@ -1,0 +1,49 @@
+@import "tailwindcss";
+@layer base {
+  :root {
+    --primary-color: #CD2C58;
+    --primary-hover: #E06B80;
+    --primary-light: #FFE6D4;
+    --primary-light-hover: #FFC69D;
+    
+    --bg-color: #F8FAFC;
+    --surface-color: #FFFFFF;
+    --text-primary: #0F172A;
+    --text-secondary: #64748B;
+    --border-color: #E2E8F0;
+    --success-color: #10B981;
+    --danger-color: #EF4444;
+    
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+    
+    --radius-md: 0.5rem;
+    --radius-lg: 1rem;
+    --radius-full: 9999px;
+    --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  body {
+    @apply bg-[var(--bg-color)] text-[var(--text-primary)] antialiased;
+    font-family: 'Inter', sans-serif;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply inline-flex items-center justify-center bg-[var(--primary-color)] text-white px-6 py-3 rounded-[var(--radius-md)] font-medium shadow-[var(--shadow-sm)] transition-all hover:bg-[var(--primary-hover)] hover:-translate-y-[1px] hover:shadow-[var(--shadow-md)];
+  }
+
+  .btn-outline {
+    @apply inline-flex items-center justify-center bg-transparent text-[var(--primary-color)] px-6 py-3 rounded-[var(--radius-md)] font-medium border border-[var(--primary-color)] transition-all hover:bg-[var(--primary-light)];
+  }
+
+  .input-field {
+    @apply w-full px-4 py-3 rounded-[var(--radius-md)] border border-[var(--border-color)] text-base outline-none transition-all focus:border-[var(--primary-color)] focus:ring-2 focus:ring-[var(--primary-light)];
+  }
+
+  .card {
+    @apply bg-[var(--surface-color)] rounded-[var(--radius-lg)] shadow-[var(--shadow-sm)] border border-[var(--border-color)] overflow-hidden transition-all hover:shadow-[var(--shadow-md)];
+  }
+}
