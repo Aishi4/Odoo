@@ -1,40 +1,27 @@
 "use client";
-import React, { useState } from 'react';
-import { Mail, Lock, User, ArrowRight } from 'lucide-react';
+import React from 'react';
+import Link from 'next/link';
+import { Mail, Lock, ArrowRight } from 'lucide-react';
 
 export default function Login() {
-  const [isLogin, setIsLogin] = useState(true);
 
   return (
     <div className="min-h-[calc(100vh-5rem)] flex items-center justify-center p-6 bg-gray-50">
       <div className="w-full max-w-4xl bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden flex flex-col md:flex-row min-h-[600px]">
         
-        {/* Left Side: Form */}
+        {/* Left */}
         <div className="w-full md:w-1/2 p-8 md:p-12 flex flex-col justify-center">
           <div className="mb-10 text-center md:text-left">
-            <h1 className="text-3xl font-black text-gray-900 mb-2">
-              {isLogin ? 'Welcome Back!' : 'Create Account'}
-            </h1>
-            <p className="text-gray-500">
-              {isLogin ? 'Sign in to manage your rentals and orders.' : 'Sign up to start renting premium equipment.'}
-            </p>
+            <h1 className="text-3xl font-black text-gray-900 mb-2">Welcome Back!</h1>
+            <p className="text-gray-500">Sign in to manage your rentals and orders.</p>
           </div>
 
           <form className="space-y-5" onSubmit={(e) => { e.preventDefault(); window.location.href = '/'; }}>
-            {!isLogin && (
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">Full Name</label>
-                <div className="relative">
-                  <input type="text" className="w-full bg-gray-50 border border-gray-200 rounded-xl py-3 px-4 pl-12 text-sm focus:outline-none focus:border-[#CD2C58] focus:ring-1 focus:ring-[#CD2C58] focus:bg-white transition-all" placeholder="John Doe" required />
-                  <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                </div>
-              </div>
-            )}
             
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">Email Address</label>
               <div className="relative">
-                <input type="email" className="w-full bg-gray-50 border border-gray-200 rounded-xl py-3 px-4 pl-12 text-sm focus:outline-none focus:border-[#CD2C58] focus:ring-1 focus:ring-[#CD2C58] focus:bg-white transition-all" placeholder="john@example.com" required />
+                <input type="email" className="w-full bg-gray-50 border border-gray-200 rounded-xl py-3 px-4 pl-12 text-sm focus:outline-none focus:border-[#CD2C58] focus:ring-1 focus:ring-[#CD2C58] focus:bg-white transition-all" placeholder="name@example.com" required />
                 <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
               </div>
             </div>
@@ -42,7 +29,7 @@ export default function Login() {
             <div>
               <div className="flex justify-between items-center mb-1">
                 <label className="block text-sm font-semibold text-gray-700">Password</label>
-                {isLogin && <a href="#" className="text-xs font-medium text-[#CD2C58] hover:underline">Forgot password?</a>}
+                <a href="/forgot-password" className="text-xs font-medium text-[#CD2C58] hover:underline">Forgot password?</a>
               </div>
               <div className="relative">
                 <input type="password" className="w-full bg-gray-50 border border-gray-200 rounded-xl py-3 px-4 pl-12 text-sm focus:outline-none focus:border-[#CD2C58] focus:ring-1 focus:ring-[#CD2C58] focus:bg-white transition-all" placeholder="••••••••" required />
@@ -51,22 +38,20 @@ export default function Login() {
             </div>
 
             <button type="submit" className="w-full py-3.5 bg-[#CD2C58] text-white rounded-xl font-bold hover:bg-[#E06B80] transition-colors shadow-lg shadow-[#CD2C58]/30 flex items-center justify-center gap-2 mt-6">
-              {isLogin ? 'Sign In' : 'Create Account'} <ArrowRight className="w-4 h-4" />
+              Sign In <ArrowRight className="w-4 h-4" />
             </button>
           </form>
 
           <div className="mt-8 text-center text-sm text-gray-600">
-            {isLogin ? "Don't have an account? " : "Already have an account? "}
-            <button 
-              onClick={() => setIsLogin(!isLogin)}
-              className="font-bold text-[#CD2C58] hover:underline"
-            >
-              {isLogin ? 'Sign up' : 'Sign in'}
-            </button>
+            Don&#39;t have an account?{' '}
+            <Link href="/register" className="font-bold text-[#CD2C58] hover:underline">
+              Sign up
+            </Link>
           </div>
         </div>
 
-        {/* Right Side: Image/Branding */}
+        {/* right */}
+
         <div className="w-full md:w-1/2 bg-[#FFE6D4] p-12 hidden md:flex flex-col justify-between relative overflow-hidden">
           <div className="relative z-10">
             <div className="text-2xl font-black text-[#CD2C58] tracking-tight mb-8">Odoo Rentals</div>
@@ -77,20 +62,7 @@ export default function Login() {
               Join thousands of professionals renting top-tier equipment seamlessly.
             </p>
           </div>
-          
-          <div className="relative z-10 mt-12 bg-white/60 backdrop-blur-md p-6 rounded-2xl border border-white/50 shadow-xl">
-            <div className="flex gap-4 items-center">
-              <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-200">
-                <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&q=80" alt="User" className="w-full h-full object-cover" />
-              </div>
-              <div>
-                <p className="text-sm font-bold text-gray-900 leading-snug">"The best rental platform I've ever used. Completely transformed our workflow."</p>
-                <p className="text-xs text-gray-500 font-medium mt-1">— Sarah J., Creative Director</p>
-              </div>
-            </div>
-          </div>
 
-          {/* Decorative Elements */}
           <div className="absolute top-[-10%] right-[-10%] w-64 h-64 bg-[#FFC69D] rounded-full blur-3xl opacity-50"></div>
           <div className="absolute bottom-[-10%] left-[-10%] w-64 h-64 bg-[#E06B80] rounded-full blur-3xl opacity-20"></div>
         </div>

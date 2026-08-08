@@ -2,10 +2,10 @@ import React from 'react';
 
 export default function AdminOrders() {
   const orders = [
-    { ref: 'SO00010', customer: 'John Doe', status: 'Picked Up', total: '$150.00', invoice: 'Invoiced' },
-    { ref: 'SO00011', customer: 'Jane Smith', status: 'Reserved', total: '$45.00', invoice: 'Nothing to Invoice' },
-    { ref: 'SO00012', customer: 'Acme Corp', status: 'Late Return', total: '$300.00', invoice: 'Confirmed' },
-    { ref: 'SO00013', customer: 'Bob Johnson', status: 'Quotation Sent', total: '$80.00', invoice: 'Nothing to Invoice' },
+    { ref: 'SO00010', customer: 'John Doe', status: 'Picked Up', total: '₹150.00', invoice: 'Invoiced' },
+    { ref: 'SO00011', customer: 'Jane Smith', status: 'Reserved', total: '₹45.00', invoice: 'Nothing to Invoice' },
+    { ref: 'SO00012', customer: 'Acme Corp', status: 'Late Return', total: '₹300.00', invoice: 'Confirmed' },
+    { ref: 'SO00013', customer: 'Bob Johnson', status: 'Quotation Sent', total: '₹80.00', invoice: 'Nothing to Invoice' },
   ];
 
   const getStatusColor = (status: string) => {

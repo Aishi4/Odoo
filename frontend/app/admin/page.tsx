@@ -8,7 +8,7 @@ export default function AdminDashboard() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1.5rem', marginBottom: '2rem' }}>
         <div className="card" style={{ padding: '1.5rem' }}>
           <div style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', fontWeight: 500 }}>Total Revenue</div>
-          <div style={{ fontSize: '1.875rem', fontWeight: 700, color: 'var(--primary-color)' }}>$24,500</div>
+          <div style={{ fontSize: '1.875rem', fontWeight: 700, color: 'var(--primary-color)' }}>₹24,500</div>
           <div style={{ color: 'var(--success-color)', fontSize: '0.875rem', marginTop: '0.5rem' }}>+12% from last month</div>
         </div>
         <div className="card" style={{ padding: '1.5rem' }}>

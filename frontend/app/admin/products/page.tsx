@@ -2,10 +2,10 @@ import React from 'react';
 
 export default function AdminProducts() {
   const products = [
-    { name: 'Premium Office Chair', type: 'Goods', price: '$15.00/day', status: 'Published', quantity: 45 },
-    { name: 'MacBook Pro 16"', type: 'Goods', price: '$45.00/day', status: 'Unpublished', quantity: 12 },
-    { name: 'Delivery Service', type: 'Service', price: '$5.00', status: 'Published', quantity: '-' },
-    { name: 'Late Fees Penalty', type: 'Service', price: '$10.00/hour', status: 'Published', quantity: '-' },
+    { name: 'Premium Office Chair', type: 'Goods', price: '₹15.00/day', status: 'Published', quantity: 45 },
+    { name: 'MacBook Pro 16"', type: 'Goods', price: '₹45.00/day', status: 'Unpublished', quantity: 12 },
+    { name: 'Delivery Service', type: 'Service', price: '₹5.00', status: 'Published', quantity: '-' },
+    { name: 'Late Fees Penalty', type: 'Service', price: '₹10.00/hour', status: 'Published', quantity: '-' },
   ];
 
   return (
