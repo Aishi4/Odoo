@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Search, Heart, ShoppingCart, User, ChevronDown } from "lucide-react";
 
@@ -31,9 +32,9 @@ export default function Navbar() {
           <a href="/" className="text-2xl font-bold text-[#CD2C58] tracking-tight">Odoo Rentals</a>
           <nav className="hidden md:flex items-center gap-6">
             <a href="/" className="text-gray-600 hover:text-[#CD2C58] font-medium transition-colors">Products</a>
-            <a href="#" className="text-gray-600 hover:text-[#CD2C58] font-medium transition-colors">Terms & Condition</a>
-            <a href="#" className="text-gray-600 hover:text-[#CD2C58] font-medium transition-colors">About us</a>
-            <a href="#" className="text-gray-600 hover:text-[#CD2C58] font-medium transition-colors">Contact Us</a>
+            <Link href="/terms" className="text-gray-600 hover:text-[#CD2C58] font-medium transition-colors">Terms & Condition</Link>
+            <Link href="/about" className="text-gray-600 hover:text-[#CD2C58] font-medium transition-colors">About us</Link>
+            <Link href="/contact" className="text-gray-600 hover:text-[#CD2C58] font-medium transition-colors">Contact Us</Link>
           </nav>
         </div>
 
@@ -52,10 +53,10 @@ export default function Navbar() {
 
         {/* Right Icons */}
         <div className="flex items-center gap-6">
-          <button className="text-gray-600 hover:text-[#CD2C58] transition-colors relative">
+          <Link href="/wishlist" className="text-gray-600 hover:text-[#CD2C58] transition-colors relative">
             <Heart className="w-6 h-6" />
             <span className="absolute -top-1 -right-1.5 bg-[#CD2C58] text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">2</span>
-          </button>
+          </Link>
           <a href="/checkout" className="text-gray-600 hover:text-[#CD2C58] transition-colors relative">
             <ShoppingCart className="w-6 h-6" />
             <span className="absolute -top-1 -right-1.5 bg-[#CD2C58] text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">3</span>
@@ -70,9 +71,9 @@ export default function Navbar() {
             </div>
             {/* Dropdown */}
             <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-100 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all flex flex-col py-2 z-50">
-              <a href="#" className="px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-[#CD2C58]">My Profile</a>
-              <a href="#" className="px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-[#CD2C58]">My Orders</a>
-              <a href="#" className="px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-[#CD2C58]">Settings</a>
+              <Link href="/profile" className="px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-[#CD2C58]">My Profile</Link>
+              <Link href="/orders" className="px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-[#CD2C58]">My Orders</Link>
+              <Link href="/settings" className="px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-[#CD2C58]">Settings</Link>
               <div className="h-px bg-gray-100 my-2"></div>
               <a href="/login" className="px-4 py-2 text-sm text-red-600 hover:bg-red-50">Logout</a>
             </div>
