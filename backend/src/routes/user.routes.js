@@ -6,5 +6,6 @@ const { authenticateToken, authorizeRoles } = require('../middleware/auth.middle
 router.get('/profile', authenticateToken, userController.getProfile);
 router.put('/profile', authenticateToken, userController.updateProfile);
 router.get('/', authenticateToken, authorizeRoles('ADMIN', 'VENDOR'), userController.getAllUsers);
+router.put('/:id/role', authenticateToken, authorizeRoles('ADMIN', 'SUPERADMIN'), userController.updateRole);
 
 module.exports = router;

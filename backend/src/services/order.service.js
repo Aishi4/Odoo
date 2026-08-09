@@ -24,12 +24,38 @@ const generateOrderNumber = async (transaction = null) => {
 };
 
 /**
+ * Auto-release stock for expired PENDING_PAYMENT orders (> 10 mins old)
+ * Runs in its own independent DB operation — NOT inside the caller's transaction.
+ */
+const releaseExpiredOrders = async () => {
+  try {
+    const now = new Date();
+    await Order.update(
+      { status: 'CANCELLED', expires_at: null },
+      {
+        where: {
+          status: 'PENDING_PAYMENT',
+          expires_at: { [Op.lt]: now },
+        },
+      }
+    );
+  } catch (err) {
+    console.error('Error releasing expired order stock:', err.message);
+  }
+};
+
+/**
  * Convert customer's active cart into a Rental Order using a PostgreSQL Transaction
  */
 const createOrderFromCart = async (customerId, { delivery_method, delivery_address }) => {
+  // 0. Release any timed-out / expired pending reservations BEFORE opening main transaction
+  //    so a failure here never aborts the checkout transaction
+  await releaseExpiredOrders();
+
   const transaction = await sequelize.transaction();
 
   try {
+
     // 1. Fetch active cart
     const cart = await Cart.findOne({
       where: { customer_id: customerId, status: 'ACTIVE' },
@@ -59,7 +85,7 @@ const createOrderFromCart = async (customerId, { delivery_method, delivery_addre
     let overallEndDate = null;
     const orderItemsData = [];
 
-    // 2. Validate items & recalculate prices
+    // 2. Validate items, check atomic stock reservation, & recalculate prices
     for (const item of cartItems) {
       if (!item.product || item.product.status !== 'ACTIVE') {
         throw new AppError(`Product "${item.product ? item.product.name : 'Unknown'}" is no longer available`, 400);
@@ -69,6 +95,38 @@ const createOrderFromCart = async (customerId, { delivery_method, delivery_addre
       }
       if (!item.rental_period || item.rental_period.status !== 'ACTIVE') {
         throw new AppError(`Rental period for "${item.product.name}" is no longer available`, 400);
+      }
+
+      // Lock product row to prevent race conditions during concurrent checkouts
+      const lockedProduct = await Product.findByPk(item.product_id, {
+        lock: transaction.LOCK.UPDATE,
+        transaction,
+      });
+
+      // Calculate currently reserved/active stock using raw SQL to avoid GROUP BY issues.
+      // Counts qty held by: active orders (CONFIRMED/ACTIVE/etc) + non-expired PENDING_PAYMENT orders.
+      const [[{ reserved }]] = await sequelize.query(
+        `SELECT COALESCE(SUM(oi.quantity), 0) AS reserved
+         FROM rental_order_items oi
+         INNER JOIN rental_orders o ON oi.order_id = o.id
+         WHERE oi.product_id = :productId
+           AND (
+             o.status IN ('CONFIRMED', 'READY_FOR_PICKUP', 'PICKED_UP', 'ACTIVE')
+             OR (o.status = 'PENDING_PAYMENT' AND o.expires_at > NOW())
+           )`,
+        {
+          replacements: { productId: item.product_id },
+          transaction,
+        }
+      );
+      const activeReservedSum = Number(reserved) || 0;
+
+      const availableQuantity = Number(lockedProduct.quantity_on_hand) - Number(activeReservedSum);
+      if (availableQuantity < item.quantity) {
+        throw new AppError(
+          `Stock reservation failed for "${lockedProduct.name}". Only ${Math.max(0, availableQuantity)} unit(s) available; the rest are currently reserved by another customer.`,
+          400
+        );
       }
 
       // Recalculate price
@@ -115,15 +173,17 @@ const createOrderFromCart = async (customerId, { delivery_method, delivery_addre
       });
     }
 
-    // 3. Generate Order Number
+    // 3. Generate Order Number & Expiration Time (10 Minutes)
     const orderNumber = await generateOrderNumber(transaction);
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes hold
 
-    // 4. Create Rental Order
+    // 4. Create Rental Order with PENDING_PAYMENT status and 10-minute hold
     const order = await Order.create(
       {
         customer_id: customerId,
         order_number: orderNumber,
         status: 'PENDING_PAYMENT',
+        expires_at: expiresAt,
         subtotal: Number(subtotal.toFixed(2)),
         delivery_method,
         delivery_address: delivery_method === 'DELIVERY' ? delivery_address.trim() : null,
@@ -282,6 +342,57 @@ const cancelOrder = async (customerId, orderId) => {
 };
 
 /**
+ * Customer accepts quotation online (SENT -> CONFIRMED)
+ */
+const acceptCustomerQuotation = async (customerId, orderId) => {
+  const order = await Order.findOne({
+    where: { id: orderId, customer_id: customerId },
+    include: [{ model: User, as: 'customer', attributes: ['id', 'name', 'email'] }],
+  });
+
+  if (!order) {
+    throw new AppError('Quotation not found or access denied', 404);
+  }
+
+  if (order.status !== 'SENT' && order.status !== 'DRAFT') {
+    throw new AppError(`Cannot accept quotation in current status: ${order.status}`, 400);
+  }
+
+  order.status = 'CONFIRMED';
+  await order.save();
+
+  // Dispatch confirmation email
+  const emailService = require('./email.service');
+  if (order.customer) {
+    emailService.sendOrderConfirmationEmail(order, order.customer.email, order.customer.name).catch(console.error);
+  }
+
+  return await getOrderDetailsById(order.id);
+};
+
+/**
+ * Customer rejects quotation online (SENT -> CANCELLED)
+ */
+const rejectCustomerQuotation = async (customerId, orderId) => {
+  const order = await Order.findOne({
+    where: { id: orderId, customer_id: customerId },
+  });
+
+  if (!order) {
+    throw new AppError('Quotation not found or access denied', 404);
+  }
+
+  if (order.status !== 'SENT' && order.status !== 'DRAFT') {
+    throw new AppError(`Cannot decline quotation in current status: ${order.status}`, 400);
+  }
+
+  order.status = 'CANCELLED';
+  await order.save();
+
+  return await getOrderDetailsById(order.id);
+};
+
+/**
  * Get all orders for Admin with optional filters
  */
 const getAllOrdersForAdmin = async (filters = {}) => {
@@ -300,13 +411,27 @@ const getAllOrdersForAdmin = async (filters = {}) => {
     whereClause.end_date = { [Op.lte]: filters.end_date };
   }
 
+  const itemInclude = {
+    model: OrderItem,
+    as: 'items',
+    include: [
+      {
+        model: Product,
+        as: 'product',
+      },
+    ],
+  };
+
+  if (filters.vendor_id) {
+    itemInclude.include[0].where = { vendor_id: filters.vendor_id };
+    itemInclude.include[0].required = true;
+    itemInclude.required = true;
+  }
+
   const orders = await Order.findAll({
     where: whereClause,
     include: [
-      {
-        model: OrderItem,
-        as: 'items',
-      },
+      itemInclude,
       {
         model: User,
         as: 'customer',
@@ -341,6 +466,8 @@ const updateOrderStatus = async (orderId, newStatus) => {
   }
 
   const validStatuses = [
+    'DRAFT',
+    'SENT',
     'PENDING_PAYMENT',
     'CONFIRMED',
     'READY_FOR_PICKUP',
@@ -368,6 +495,8 @@ module.exports = {
   getCustomerOrders,
   getCustomerOrderById,
   cancelOrder,
+  acceptCustomerQuotation,
+  rejectCustomerQuotation,
   getAllOrdersForAdmin,
   updateOrderStatus,
 };

@@ -34,7 +34,7 @@ export default function CustomersPage() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Registered Customers & System Users</h1>
-          <p className="text-sm text-gray-500 mt-1">Live customer accounts registered in PostgreSQL database.</p>
+          <p className="text-sm text-gray-500 mt-1">Manage registered customer accounts and order histories.</p>
         </div>
       </div>
 
@@ -57,7 +57,7 @@ export default function CustomersPage() {
         {loading ? (
           <div className="p-12 text-center text-gray-500 flex flex-col items-center justify-center">
             <Loader2 className="w-8 h-8 animate-spin text-[#CD2C58] mb-2" />
-            Loading registered users from database...
+            Loading registered customers...
           </div>
         ) : filteredUsers.length === 0 ? (
           <div className="p-12 text-center text-gray-500">

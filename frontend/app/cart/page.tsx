@@ -133,7 +133,16 @@ export default function Cart() {
                   </div>
                   <div className="flex-1">
                     <h3 className="font-bold text-gray-900 text-base">{name}</h3>
-                    <p className="text-xs text-gray-500 mb-2">Standard Rental Period</p>
+                    
+                    {/* Dynamic Rental Period & Dates Display */}
+                    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-pink-50 border border-pink-100 text-[#CD2C58] rounded-lg text-xs font-semibold my-1.5">
+                      <span className="font-bold">Rental Term:</span>
+                      {item.start_date && item.end_date ? (
+                        <span>{item.start_date} to {item.end_date}</span>
+                      ) : (
+                        <span>{item.rental_period || item.period || '1 Day Rental Period'}</span>
+                      )}
+                    </div>
                     <div className="flex items-center gap-3">
                       <div className="flex items-center border border-gray-300 rounded-md">
                         <button 

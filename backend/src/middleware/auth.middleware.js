@@ -42,7 +42,7 @@ const authenticateToken = async (req, res, next) => {
  */
 const authorizeRoles = (...allowedRoles) => {
   return (req, res, next) => {
-    if (!req.user || !allowedRoles.includes(req.user.role)) {
+    if (!req.user || (!allowedRoles.includes(req.user.role) && req.user.role !== 'SUPERADMIN')) {
       return next(
         new AppError(`Access denied. Action requires one of the following roles: ${allowedRoles.join(', ')}`, 403)
       );
@@ -51,7 +51,35 @@ const authorizeRoles = (...allowedRoles) => {
   };
 };
 
+/**
+ * Optional authentication middleware (attaches user if valid token present)
+ */
+const optionalAuthenticateToken = async (req, res, next) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.split(' ')[1];
+      if (token) {
+        let decoded;
+        try {
+          decoded = verifyToken(token);
+          if (decoded && decoded.id) {
+            const user = await userService.findUserById(decoded.id);
+            if (user) {
+              req.user = user;
+            }
+          }
+        } catch (err) {}
+      }
+    }
+    next();
+  } catch (error) {
+    next();
+  }
+};
+
 module.exports = {
   authenticateToken,
+  optionalAuthenticateToken,
   authorizeRoles,
 };

@@ -9,11 +9,13 @@ const { authenticateToken } = require('../middleware/auth.middleware');
 
 router.use(authenticateToken);
 
-// Order lifecycle routes
+// Order lifecycle & Quotation routes
 router.post('/', orderController.createOrder);
 router.get('/', orderController.getCustomerOrders);
 router.get('/:id', orderController.getCustomerOrderById);
 router.post('/:id/cancel', orderController.cancelOrder);
+router.put('/:id/accept-quotation', orderController.acceptQuotation);
+router.put('/:id/reject-quotation', orderController.rejectQuotation);
 
 // Payment & Security Deposit routes
 router.get('/:orderId/payment-summary', paymentController.getPaymentSummary);

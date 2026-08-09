@@ -29,7 +29,7 @@ export default function OrdersDashboard() {
         setOverview(overviewRes.data);
       }
       
-      if (allOrdersRes.success && Array.isArray(allOrdersRes.data) && allOrdersRes.data.length > 0) {
+      if (allOrdersRes.success && Array.isArray(allOrdersRes.data)) {
         setActiveRentals(allOrdersRes.data);
       } else if (activeRes.success && Array.isArray(activeRes.data)) {
         setActiveRentals(activeRes.data);
@@ -97,13 +97,58 @@ export default function OrdersDashboard() {
     },
   ];
 
+  const handleSendQuotation = async (orderId: string) => {
+    setUpdatingId(orderId);
+    setMessage(null);
+    const res = await adminApi.sendQuotation(orderId);
+    setUpdatingId(null);
+    if (res.success) {
+      setMessage({ type: 'success', text: 'Quotation sent successfully.' });
+      fetchDashboardData();
+      if (selectedOrder) setSelectedOrder({ ...selectedOrder, status: 'SENT' });
+      setTimeout(() => setMessage(null), 3000);
+    } else {
+      setMessage({ type: 'error', text: res.message || 'Failed to send quotation.' });
+    }
+  };
+
+  const handleConfirmOrder = async (orderId: string) => {
+    setUpdatingId(orderId);
+    setMessage(null);
+    const res = await adminApi.confirmOrder(orderId);
+    setUpdatingId(null);
+    if (res.success) {
+      setMessage({ type: 'success', text: 'Order confirmed as Sale Order.' });
+      fetchDashboardData();
+      if (selectedOrder) setSelectedOrder({ ...selectedOrder, status: 'CONFIRMED' });
+      setTimeout(() => setMessage(null), 3000);
+    } else {
+      setMessage({ type: 'error', text: res.message || 'Failed to confirm order.' });
+    }
+  };
+
+  const handleCreateInvoice = async (orderId: string) => {
+    setUpdatingId(orderId);
+    setMessage(null);
+    const res = await adminApi.createInvoice(orderId);
+    setUpdatingId(null);
+    if (res.success) {
+      setMessage({ type: 'success', text: 'Draft invoice created successfully! Redirecting...' });
+      setTimeout(() => {
+        window.location.href = '/admin/invoices';
+      }, 1000);
+    } else {
+      setMessage({ type: 'error', text: res.message || 'Failed to create invoice.' });
+    }
+  };
+
   return (
     <div className="p-6 max-w-[1600px] mx-auto min-h-[calc(100vh-3.5rem)]">
       {/* Header Actions */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Rental Operations & Vendor Dashboard</h1>
-          <p className="text-sm text-gray-500 mt-1">Real-time operational metrics & live customer order tracking (PostgreSQL).</p>
+          <p className="text-sm text-gray-500 mt-1">Real-time operational metrics & live customer order tracking.</p>
         </div>
         
         <div className="flex items-center gap-3 w-full sm:w-auto">
@@ -161,11 +206,12 @@ export default function OrdersDashboard() {
             className="border border-gray-300 rounded-md text-sm px-3 py-2 bg-white focus:ring-1 focus:ring-[#CD2C58]"
           >
             <option value="ALL">All Statuses ({activeRentals.length})</option>
-            <option value="CONFIRMED">CONFIRMED</option>
-            <option value="PENDING_PAYMENT">PENDING_PAYMENT</option>
-            <option value="READY_FOR_PICKUP">READY_FOR_PICKUP</option>
+            <option value="DRAFT">DRAFT (Quotation)</option>
+            <option value="SENT">SENT (Quotation Sent)</option>
+            <option value="CONFIRMED">CONFIRMED (Sale Order)</option>
             <option value="PICKED_UP">PICKED_UP</option>
             <option value="ACTIVE">ACTIVE</option>
+            <option value="RETURNED">RETURNED</option>
             <option value="COMPLETED">COMPLETED</option>
             <option value="CANCELLED">CANCELLED</option>
           </select>
@@ -225,7 +271,8 @@ export default function OrdersDashboard() {
                       <td className="px-6 py-4">
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${
                           order.status === 'CONFIRMED' ? 'bg-emerald-100 text-emerald-800' :
-                          order.status === 'ACTIVE' ? 'bg-blue-100 text-blue-800' :
+                          order.status === 'ACTIVE' || order.status === 'PICKED_UP' ? 'bg-blue-100 text-blue-800' :
+                          order.status === 'DRAFT' || order.status === 'SENT' ? 'bg-purple-100 text-purple-800' :
                           order.status === 'PENDING_PAYMENT' ? 'bg-amber-100 text-amber-800' :
                           'bg-gray-100 text-gray-700'
                         }`}>
@@ -250,12 +297,11 @@ export default function OrdersDashboard() {
                             onChange={(e) => handleStatusChange(order.id, e.target.value)}
                             className="text-xs border border-gray-300 rounded-md px-2 py-1 bg-white font-bold focus:ring-1 focus:ring-[#CD2C58]"
                           >
-                            <option value="PENDING_PAYMENT">PENDING_PAYMENT</option>
+                            <option value="DRAFT">DRAFT</option>
+                            <option value="SENT">SENT</option>
                             <option value="CONFIRMED">CONFIRMED</option>
-                            <option value="READY_FOR_PICKUP">READY_FOR_PICKUP</option>
                             <option value="PICKED_UP">PICKED_UP</option>
                             <option value="ACTIVE">ACTIVE</option>
-                            <option value="RETURN_PENDING">RETURN_PENDING</option>
                             <option value="RETURNED">RETURNED</option>
                             <option value="COMPLETED">COMPLETED</option>
                             <option value="CANCELLED">CANCELLED</option>
@@ -299,17 +345,6 @@ export default function OrdersDashboard() {
                           >
                             <Eye className="w-3.5 h-3.5" /> Details
                           </button>
-                          <select 
-                            disabled={updatingId === order.id}
-                            value={order.status}
-                            onChange={(e) => handleStatusChange(order.id, e.target.value)}
-                            className="text-[11px] border border-gray-300 rounded px-1.5 py-0.5 bg-white font-bold"
-                          >
-                            <option value="CONFIRMED">CONFIRMED</option>
-                            <option value="ACTIVE">ACTIVE</option>
-                            <option value="COMPLETED">COMPLETED</option>
-                            <option value="CANCELLED">CANCELLED</option>
-                          </select>
                         </div>
                       </div>
                     );
@@ -321,20 +356,92 @@ export default function OrdersDashboard() {
         )}
       </div>
 
-      {/* Order Detail Modal */}
+      {/* Odoo-style Order Detail Modal */}
       {selectedOrder && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+          <div className="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto">
+            {/* Header */}
             <div className="flex justify-between items-start mb-4 border-b border-gray-100 pb-3">
               <div>
-                <h3 className="text-xl font-bold text-gray-900">Order #{selectedOrder.order_number || selectedOrder.id.slice(0, 8)}</h3>
-                <span className="text-xs text-gray-500">Customer Details & Order Payload</span>
+                <h3 className="text-xl font-bold text-gray-900">Rental Order #{selectedOrder.order_number || selectedOrder.id.slice(0, 8)}</h3>
+                <span className="text-xs text-gray-500">Customer Details & Lifecycle Actions</span>
               </div>
               <button onClick={() => setSelectedOrder(null)} className="p-1 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
+            {/* Odoo Progress Pipeline Bar */}
+            <div className="mb-6 bg-gray-50 p-3 rounded-xl border border-gray-200 flex items-center justify-between gap-1 overflow-x-auto text-xs font-bold">
+              {['DRAFT', 'SENT', 'CONFIRMED', 'PICKED_UP', 'RETURNED'].map((step, idx) => {
+                const stepLabels: Record<string, string> = {
+                  DRAFT: '1. Draft Quotation',
+                  SENT: '2. Quotation Sent',
+                  CONFIRMED: '3. Sale Order',
+                  PICKED_UP: '4. Picked Up',
+                  RETURNED: '5. Returned',
+                };
+
+                const currentIdx = ['DRAFT', 'SENT', 'CONFIRMED', 'READY_FOR_PICKUP', 'PICKED_UP', 'ACTIVE', 'RETURN_PENDING', 'RETURNED', 'COMPLETED'].indexOf(selectedOrder.status);
+                const stepIdx = ['DRAFT', 'SENT', 'CONFIRMED', 'PICKED_UP', 'RETURNED'].indexOf(step);
+                const isActive = stepIdx <= (currentIdx >= 0 ? currentIdx : 0);
+
+                return (
+                  <div key={step} className={`px-3 py-1.5 rounded-lg flex-1 text-center whitespace-nowrap transition-all ${
+                    isActive ? 'bg-[#CD2C58] text-white shadow-sm' : 'bg-gray-200 text-gray-500'
+                  }`}>
+                    {stepLabels[step]}
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Odoo Action Buttons Bar */}
+            <div className="mb-6 flex flex-wrap items-center gap-2 border-b border-gray-100 pb-4">
+              <button
+                disabled={updatingId === selectedOrder.id}
+                onClick={() => handleSendQuotation(selectedOrder.id)}
+                className="px-3 py-2 bg-purple-600 text-white text-xs font-bold rounded-lg shadow-sm hover:bg-purple-700 transition-colors"
+              >
+                ✉️ Send by Email
+              </button>
+              <button
+                disabled={updatingId === selectedOrder.id}
+                onClick={() => handleConfirmOrder(selectedOrder.id)}
+                className="px-3 py-2 bg-emerald-600 text-white text-xs font-bold rounded-lg shadow-sm hover:bg-emerald-700 transition-colors"
+              >
+                ✅ Confirm
+              </button>
+              <button
+                disabled={updatingId === selectedOrder.id}
+                onClick={() => handleCreateInvoice(selectedOrder.id)}
+                className="px-3 py-2 bg-blue-600 text-white text-xs font-bold rounded-lg shadow-sm hover:bg-blue-700 transition-colors"
+              >
+                📄 Create Invoice
+              </button>
+              <button
+                disabled={updatingId === selectedOrder.id}
+                onClick={() => handleStatusChange(selectedOrder.id, 'PICKED_UP')}
+                className="px-3 py-2 bg-amber-600 text-white text-xs font-bold rounded-lg shadow-sm hover:bg-amber-700 transition-colors"
+              >
+                📦 Pickup
+              </button>
+              <button
+                disabled={updatingId === selectedOrder.id}
+                onClick={() => handleStatusChange(selectedOrder.id, 'RETURNED')}
+                className="px-3 py-2 bg-teal-600 text-white text-xs font-bold rounded-lg shadow-sm hover:bg-teal-700 transition-colors"
+              >
+                🔄 Return
+              </button>
+              <button
+                onClick={() => window.print()}
+                className="px-3 py-2 bg-gray-100 text-gray-700 text-xs font-bold rounded-lg shadow-sm hover:bg-gray-200 transition-colors ml-auto"
+              >
+                🖨️ Print
+              </button>
+            </div>
+
+            {/* Order Details Grid */}
             <div className="space-y-4 text-sm mb-6">
               <div className="p-3 bg-gray-50 rounded-xl border border-gray-200">
                 <div className="font-bold text-gray-900 mb-1">{selectedOrder.customer?.name || selectedOrder.Customer?.name || 'Customer'}</div>

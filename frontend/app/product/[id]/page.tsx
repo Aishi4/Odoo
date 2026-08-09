@@ -23,6 +23,9 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
   const [message, setMessage] = useState<string | null>(null);
   const [isWishlisted, setIsWishlisted] = useState(false);
 
+  const [checkingAvailability, setCheckingAvailability] = useState(false);
+  const [availabilityResult, setAvailabilityResult] = useState<{ available: boolean; reason: string } | null>(null);
+
   useEffect(() => {
     const fetchProduct = async () => {
       setLoading(true);
@@ -45,6 +48,29 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
 
     fetchProduct();
   }, [unwrappedParams.id]);
+
+  useEffect(() => {
+    if (!product || !startDate || !endDate) {
+      setAvailabilityResult(null);
+      return;
+    }
+
+    const check = async () => {
+      setCheckingAvailability(true);
+      const sDateStr = startDate.toISOString().split('T')[0];
+      const eDateStr = endDate.toISOString().split('T')[0];
+      
+      const res = await catalogApi.checkAvailability(product.id, sDateStr, eDateStr);
+      setCheckingAvailability(false);
+      if (res.data) {
+        setAvailabilityResult({ available: res.data.available, reason: res.data.reason });
+      } else {
+        setAvailabilityResult({ available: true, reason: 'Available for selected rental period' });
+      }
+    };
+
+    check();
+  }, [startDate, endDate, product]);
 
   const toggleWishlist = () => {
     if (!product) return;
@@ -112,6 +138,8 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
             price: product.base_price,
             img: product.image_url,
             quantity: qty,
+            start_date: sDateStr,
+            end_date: eDateStr,
           });
         }
         localStorage.setItem('cart', JSON.stringify(localCart));
@@ -139,7 +167,7 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
       <div className="max-w-4xl mx-auto px-6 py-20 text-center min-h-[calc(100vh-5rem)] flex flex-col items-center justify-center">
         <PackageX className="w-16 h-16 text-gray-300 mb-4" />
         <h2 className="text-2xl font-bold text-gray-900 mb-2">Product Not Found</h2>
-        <p className="text-gray-500 mb-6">The requested product could not be found in the live database.</p>
+        <p className="text-gray-500 mb-6">The requested product could not be found.</p>
         <Link href="/" className="px-6 py-3 bg-[#CD2C58] text-white font-bold rounded-xl hover:bg-[#b02248] transition-colors">
           Return to Catalog
         </Link>
@@ -213,20 +241,50 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
             {description}
           </p>
 
-          <div className="bg-gray-50 rounded-xl p-6 mb-8 border border-gray-100">
-            <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-              <CalendarIcon className="w-5 h-5 text-[#CD2C58]" /> Select Rental Dates
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="bg-gray-50 rounded-2xl p-6 mb-8 border border-gray-200 space-y-5">
+            <div className="flex items-center justify-between">
+              <h3 className="font-bold text-gray-900 text-sm flex items-center gap-2">
+                <CalendarIcon className="w-5 h-5 text-[#CD2C58]" /> Select Rental Duration & Dates
+              </h3>
+              <span className="text-xs text-gray-500 font-semibold">Flexible Rates</span>
+            </div>
+
+            {/* Quick Rental Period Pills */}
+            <div className="flex flex-wrap gap-2">
+              {[
+                { label: '1 Day', days: 1, discount: 'Standard' },
+                { label: '3 Days', days: 3, discount: '5% Off' },
+                { label: '1 Week', days: 7, discount: '10% Off' },
+                { label: '1 Month', days: 30, discount: '25% Off' },
+              ].map((p, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => {
+                    const s = startDate || new Date();
+                    setStartDate(s);
+                    const e = new Date(s);
+                    e.setDate(e.getDate() + p.days);
+                    setEndDate(e);
+                  }}
+                  className="px-3.5 py-2 bg-white hover:bg-pink-50 border border-gray-200 hover:border-[#CD2C58] rounded-xl text-xs font-bold text-gray-800 transition-all flex items-center gap-1.5 shadow-sm"
+                >
+                  <span>{p.label}</span>
+                  <span className="text-[10px] text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded font-mono">{p.discount}</span>
+                </button>
+              ))}
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
               <div className="flex flex-col gap-2">
-                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider">Start Date</label>
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider">Start Date *</label>
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button
                       variant={"outline"}
-                      className={`w-full justify-start text-left font-normal py-5 ${!startDate && "text-gray-500"}`}
+                      className={`w-full justify-start text-left font-normal py-5 rounded-xl border-gray-300 ${!startDate && "text-gray-500"}`}
                     >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      <CalendarIcon className="mr-2 h-4 w-4 text-[#CD2C58]" />
                       {startDate ? format(startDate, "PPP") : <span>Pick start date</span>}
                     </Button>
                   </PopoverTrigger>
@@ -234,21 +292,29 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
                     <Calendar
                       mode="single"
                       selected={startDate}
-                      onSelect={setStartDate}
+                      onSelect={(date) => {
+                        setStartDate(date);
+                        if (date && (!endDate || endDate < date)) {
+                          const next = new Date(date);
+                          next.setDate(next.getDate() + 1);
+                          setEndDate(next);
+                        }
+                      }}
                       initialFocus
                     />
                   </PopoverContent>
                 </Popover>
               </div>
+
               <div className="flex flex-col gap-2">
-                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider">End Date</label>
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider">End Date *</label>
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button
                       variant={"outline"}
-                      className={`w-full justify-start text-left font-normal py-5 ${!endDate && "text-gray-500"}`}
+                      className={`w-full justify-start text-left font-normal py-5 rounded-xl border-gray-300 ${!endDate && "text-gray-500"}`}
                     >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      <CalendarIcon className="mr-2 h-4 w-4 text-[#CD2C58]" />
                       {endDate ? format(endDate, "PPP") : <span>Pick end date</span>}
                     </Button>
                   </PopoverTrigger>
@@ -263,28 +329,65 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
                 </Popover>
               </div>
             </div>
+
+            {/* REAL-TIME AVAILABILITY NOTIFICATION BANNER */}
+            <div className="pt-2">
+              {!startDate || !endDate ? (
+                <div className="p-3.5 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900 font-medium flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 text-amber-600 flex-shrink-0" />
+                  <span>Setup required: Select your rental Start Date and End Date to check period availability.</span>
+                </div>
+              ) : checkingAvailability ? (
+                <div className="p-3.5 bg-blue-50 border border-blue-200 rounded-xl text-xs text-blue-900 font-medium flex items-center gap-2">
+                  <Loader2 className="w-4 h-4 animate-spin text-blue-600 flex-shrink-0" />
+                  <span>Checking item availability for selected period...</span>
+                </div>
+              ) : availabilityResult?.available ? (
+                <div className="p-3.5 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-900 font-bold flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+                  <span>✓ Available for this rental period ({format(startDate, 'MMM dd')} - {format(endDate, 'MMM dd, yyyy')})</span>
+                </div>
+              ) : (
+                <div className="p-3.5 bg-red-50 border border-red-200 rounded-xl text-xs text-red-900 font-bold flex items-center gap-2">
+                  <PackageX className="w-4 h-4 text-red-600 flex-shrink-0" />
+                  <span>❌ Not available for this period. {availabilityResult?.reason || 'Already booked'}. Please select different dates.</span>
+                </div>
+              )}
+            </div>
+
           </div>
 
           <div className="flex gap-4">
-            <button 
-              onClick={handleAddToCart}
-              disabled={adding || !isAvailable}
-              className={`flex-1 py-4 px-6 rounded-xl font-bold text-white flex items-center justify-center gap-2 shadow-lg transition-all ${
-                !isAvailable 
-                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed shadow-none' 
-                  : 'bg-[#CD2C58] hover:bg-[#b02248]'
-              }`}
-            >
-              {adding ? (
-                <Loader2 className="w-5 h-5 animate-spin" />
-              ) : isAvailable ? (
-                <>
-                  <ShoppingBag className="w-5 h-5" /> Add to Cart & Rent
-                </>
-              ) : (
-                'Currently Out of Stock'
-              )}
-            </button>
+            {(() => {
+              const isRentable = isAvailable && startDate && endDate && availabilityResult?.available && !checkingAvailability;
+              return (
+                <button 
+                  onClick={handleAddToCart}
+                  disabled={adding || !isRentable}
+                  className={`flex-1 py-4 px-6 rounded-xl font-bold text-white flex items-center justify-center gap-2 shadow-lg transition-all ${
+                    !isRentable 
+                      ? 'bg-gray-300 text-gray-500 cursor-not-allowed shadow-none' 
+                      : 'bg-[#CD2C58] hover:bg-[#b02248]'
+                  }`}
+                >
+                  {adding ? (
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                  ) : !startDate || !endDate ? (
+                    'Select Rental Period First'
+                  ) : checkingAvailability ? (
+                    'Checking Period Availability...'
+                  ) : availabilityResult?.available === false ? (
+                    'Not Available For This Period'
+                  ) : isRentable ? (
+                    <>
+                      <ShoppingBag className="w-5 h-5" /> Add to Cart & Rent
+                    </>
+                  ) : (
+                    'Currently Unavailable'
+                  )}
+                </button>
+              );
+            })()}
 
             <button 
               onClick={toggleWishlist}

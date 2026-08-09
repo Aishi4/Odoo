@@ -24,7 +24,38 @@ const findUserById = async (id) => {
 /**
  * Find all users (excludes password)
  */
-const findAllUsers = async () => {
+const findAllUsers = async (vendorId = null) => {
+  if (vendorId) {
+    const { Order, OrderItem, Product } = require('../models');
+    const users = await User.findAll({
+      attributes: { exclude: ['password', 'reset_password_token', 'reset_password_expires'] },
+      include: [
+        {
+          model: Order,
+          as: 'orders',
+          required: true,
+          include: [
+            {
+              model: OrderItem,
+              as: 'items',
+              required: true,
+              include: [
+                {
+                  model: Product,
+                  as: 'product',
+                  where: { vendor_id: vendorId },
+                  required: true,
+                },
+              ],
+            },
+          ],
+        },
+      ],
+      order: [['created_at', 'DESC']],
+    });
+    return users.map(u => u.toJSON());
+  }
+
   const users = await User.findAll({
     attributes: { exclude: ['password', 'reset_password_token', 'reset_password_expires'] },
     order: [['created_at', 'DESC']],
@@ -36,7 +67,7 @@ const findAllUsers = async () => {
  * Create a new user with optional role (defaults to CUSTOMER)
  */
 const createUser = async ({ name, email, hashedPassword, role = 'CUSTOMER' }) => {
-  const validRoles = ['CUSTOMER', 'VENDOR', 'ADMIN'];
+  const validRoles = ['CUSTOMER', 'VENDOR', 'ADMIN', 'SUPERADMIN'];
   const userRole = validRoles.includes(role) ? role : 'CUSTOMER';
 
   const user = await User.create({
@@ -116,6 +147,53 @@ const resetUserPassword = async (userInstance, newHashedPassword) => {
   return updatedUser;
 };
 
+/**
+ * Seed or verify Super Admin user
+ */
+const seedSuperAdmin = async () => {
+  const bcrypt = require('bcryptjs');
+  try {
+    const superAdminEmail = 'super@admin123';
+    const hashedPassword = await bcrypt.hash('pass1234', 10);
+    const existing = await User.findOne({ where: { email: superAdminEmail } });
+
+    if (!existing) {
+      await User.create({
+        name: 'Super Admin',
+        email: superAdminEmail,
+        password: hashedPassword,
+        role: 'SUPERADMIN',
+      });
+      console.log('[SEED] Super Admin account initialized.');
+    } else {
+      existing.role = 'SUPERADMIN';
+      existing.password = hashedPassword;
+      await existing.save();
+      console.log('[SEED] Super Admin account verified.');
+    }
+  } catch (err) {
+    console.error('[SEED] Error seeding Super Admin:', err.message);
+  }
+};
+
+/**
+ * Update user role (Super Admin action)
+ */
+const updateUserRole = async (userId, newRole) => {
+  const validRoles = ['CUSTOMER', 'VENDOR', 'ADMIN', 'SUPERADMIN'];
+  if (!validRoles.includes(newRole)) return null;
+
+  const user = await User.findByPk(userId);
+  if (!user) return null;
+
+  user.role = newRole;
+  await user.save();
+
+  const updated = user.toJSON();
+  delete updated.password;
+  return updated;
+};
+
 module.exports = {
   findUserByEmail,
   findUserById,
@@ -125,4 +203,6 @@ module.exports = {
   setResetPasswordToken,
   findUserByResetToken,
   resetUserPassword,
+  seedSuperAdmin,
+  updateUserRole,
 };

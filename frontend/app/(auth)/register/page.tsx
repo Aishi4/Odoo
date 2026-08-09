@@ -36,12 +36,16 @@ export default function Register() {
     setLoading(false);
 
     if (res.success && res.data) {
-      if (res.data.token) {
-        localStorage.setItem('token', res.data.token);
+      const token = res.data.token;
+      const user = res.data.user || (res.data.id ? res.data : null);
+
+      if (token) {
+        localStorage.setItem('token', token);
       }
-      if (res.data.user) {
-        localStorage.setItem('user', JSON.stringify(res.data.user));
+      if (user) {
+        localStorage.setItem('user', JSON.stringify(user));
       }
+      window.dispatchEvent(new Event('userUpdated'));
       router.push('/');
     } else {
       setError(res.message || 'Registration failed. Please try again.');

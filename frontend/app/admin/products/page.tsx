@@ -58,7 +58,7 @@ export default function ProductsPage() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Products Inventory</h1>
-          <p className="text-sm text-gray-500 mt-1">Showing {filteredProducts.length} items ({activeCount} Active, {inactiveCount} Inactive in PostgreSQL database).</p>
+          <p className="text-sm text-gray-500 mt-1">Showing {filteredProducts.length} items ({activeCount} Active, {inactiveCount} Inactive).</p>
         </div>
         
         <div className="flex items-center gap-3 w-full sm:w-auto">
@@ -126,7 +126,7 @@ export default function ProductsPage() {
       <div className={`bg-white rounded-b-xl border border-gray-200 shadow-sm overflow-hidden ${viewMode === 'grid' ? 'p-6 bg-gray-50/50' : ''}`}>
         {loading ? (
           <div className="py-12 text-center text-gray-500 text-sm">
-            Loading products from PostgreSQL database...
+            Loading products...
           </div>
         ) : filteredProducts.length === 0 ? (
           <div className="py-12 text-center text-gray-500 text-sm">

@@ -64,12 +64,26 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       <header className="bg-[#CD2C58] text-white sticky top-0 z-50">
         <div className="flex items-center justify-between px-4 h-14">
           <div className="flex items-center gap-6">
-            <Link href="/admin/orders" className="flex items-center gap-2">
+            <Link href="/admin" className="flex items-center gap-2">
               <LayoutGrid className="w-5 h-5 text-white/90" />
-              <span className="font-bold text-lg tracking-tight">Odoo Admin</span>
+              <span className="font-bold text-lg tracking-tight">
+                {profile?.role === 'VENDOR' ? 'Odoo Vendor' : 'Odoo Admin'}
+              </span>
             </Link>
             
             <nav className="hidden md:flex items-center space-x-1">
+              
+              {/* Dashboard Overview */}
+              <Link href="/admin" className="px-3 py-2 text-sm font-bold rounded-md hover:bg-white/10 transition-colors">
+                Dashboard
+              </Link>
+              
+              {/* Super Admin Control link */}
+              {profile?.role === 'SUPERADMIN' && (
+                <Link href="/admin/super" className="px-3 py-2 text-sm font-bold bg-purple-900/50 text-yellow-300 border border-yellow-400/30 rounded-md hover:bg-purple-900 transition-colors flex items-center gap-1.5">
+                  ★ Super Admin
+                </Link>
+              )}
               
               {/* Order Dropdown */}
               <div className="relative group">
@@ -215,7 +229,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   </div>
 
                   <div className="py-1">
-                    <Link href="/profile" className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 font-medium">
+                    <Link href="/admin/profile" className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 font-medium">
                       <User className="w-4 h-4 text-gray-400" /> Admin Profile
                     </Link>
                     <Link href="/admin/settings" className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 font-medium">

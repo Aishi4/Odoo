@@ -13,12 +13,15 @@ const createProduct = async (req, res, next) => {
 
     validateProduct({ name, category, base_price, status });
 
+    const vendorId = req.user?.role === 'VENDOR' ? req.user.id : (req.body.vendor_id || null);
+
     const newProduct = await productService.createProduct({
       name,
       description,
       category,
       base_price,
       status,
+      vendor_id: vendorId,
     });
 
     return successResponse(res, 201, 'Product created successfully', newProduct);
@@ -33,8 +36,14 @@ const createProduct = async (req, res, next) => {
  */
 const getAllProducts = async (req, res, next) => {
   try {
-    const { status } = req.query;
-    const products = await productService.getAllProducts(status);
+    const { status, vendor_id } = req.query;
+    let vendorIdFilter = vendor_id || null;
+
+    if (req.user && req.user.role === 'VENDOR') {
+      vendorIdFilter = req.user.id;
+    }
+
+    const products = await productService.getAllProducts(status, vendorIdFilter);
     return successResponse(res, 200, 'Products retrieved successfully', products);
   } catch (error) {
     next(error);
@@ -113,10 +122,27 @@ const deleteProduct = async (req, res, next) => {
   }
 };
 
+/**
+ * GET /api/products/:id/availability?start_date=YYYY-MM-DD&end_date=YYYY-MM-DD
+ * Check availability for a specific product and rental period
+ */
+const checkAvailability = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { start_date, end_date } = req.query;
+
+    const result = await productService.checkProductAvailability(id, start_date, end_date);
+    return successResponse(res, 200, result.reason, result);
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   createProduct,
   getAllProducts,
   getProductById,
   updateProduct,
   deleteProduct,
+  checkAvailability,
 };

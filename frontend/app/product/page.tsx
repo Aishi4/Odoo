@@ -163,12 +163,17 @@ function ProductCatalogContent() {
                 const isAvailable = product.stock;
 
                 return (
-                  <div key={product.id} className="bg-white rounded-2xl border border-gray-200 overflow-hidden hover:shadow-lg transition-all group flex flex-col justify-between">
+                  <Link 
+                    key={product.id} 
+                    href={`/product/${product.id}`}
+                    className="bg-white rounded-2xl border border-gray-200 overflow-hidden hover:shadow-lg transition-all group flex flex-col justify-between cursor-pointer"
+                  >
                     <div className="relative h-56 bg-gray-100 overflow-hidden">
                       <Image 
                         src={product.img} 
                         alt={product.name} 
                         fill 
+                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                         className={`object-cover group-hover:scale-105 transition-transform duration-300 ${!isAvailable ? 'grayscale opacity-75' : ''}`}
                       />
                       
@@ -201,23 +206,17 @@ function ProductCatalogContent() {
                         </div>
 
                         {isAvailable ? (
-                          <Link 
-                            href={`/product/${product.id}`}
-                            className="px-4 py-2 bg-[#CD2C58] text-white text-xs font-bold rounded-xl hover:bg-[#b02248] transition-colors shadow-sm flex items-center gap-1.5"
-                          >
-                            <ShoppingBag className="w-3.5 h-3.5" /> View Details
-                          </Link>
+                          <span className="px-4 py-2 bg-[#CD2C58] text-white text-xs font-bold rounded-xl group-hover:bg-[#b02248] transition-colors shadow-sm flex items-center gap-1.5">
+                            <ShoppingBag className="w-3.5 h-3.5" /> Rent & Select Dates
+                          </span>
                         ) : (
-                          <button 
-                            disabled 
-                            className="px-3 py-2 bg-gray-200 text-gray-500 text-xs font-bold rounded-xl cursor-not-allowed"
-                          >
+                          <span className="px-3 py-2 bg-gray-200 text-gray-500 text-xs font-bold rounded-xl cursor-not-allowed">
                             Unavailable
-                          </button>
+                          </span>
                         )}
                       </div>
                     </div>
-                  </div>
+                  </Link>
                 );
               })}
             </div>

@@ -17,5 +17,6 @@ router.get('/late-fees', dashboardController.getLateFeeCollection);
 router.get('/priorities', dashboardController.getPriorities);
 router.get('/rental-status', dashboardController.getRentalStatusSummary);
 router.get('/revenue-summary', dashboardController.getRevenueSummary);
+router.get('/top-products', dashboardController.getTopRentedProducts);
 
 module.exports = router;

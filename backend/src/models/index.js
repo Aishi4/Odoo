@@ -14,6 +14,21 @@ const RentalReturn = require('./return.model');
 const LateFeeConfig = require('./late_fee_config.model');
 const LateFee = require('./late_fee.model');
 const DepositSettlement = require('./deposit_settlement.model');
+const Invoice = require('./invoice.model');
+const QuotationTemplate = require('./quotation_template.model');
+const Pricelist = require('./pricelist.model');
+const PricelistRule = require('./pricelist_rule.model');
+
+// --- User & Product (Vendor) Associations ---
+User.hasMany(Product, {
+  foreignKey: 'vendor_id',
+  as: 'products',
+});
+
+Product.belongsTo(User, {
+  foreignKey: 'vendor_id',
+  as: 'vendor',
+});
 
 // --- Product & Variant Associations ---
 Product.hasMany(ProductVariant, {
@@ -280,6 +295,50 @@ DepositSettlement.belongsTo(LateFee, {
   as: 'late_fee',
 });
 
+// --- Invoice Associations ---
+Order.hasMany(Invoice, {
+  foreignKey: 'order_id',
+  as: 'invoices',
+  onDelete: 'CASCADE',
+});
+
+Invoice.belongsTo(Order, {
+  foreignKey: 'order_id',
+  as: 'order',
+});
+
+User.hasMany(Invoice, {
+  foreignKey: 'customer_id',
+  as: 'invoices',
+});
+
+Invoice.belongsTo(User, {
+  foreignKey: 'customer_id',
+  as: 'customer',
+});
+
+// --- Pricelist Associations ---
+Pricelist.hasMany(PricelistRule, {
+  foreignKey: 'pricelist_id',
+  as: 'rules',
+  onDelete: 'CASCADE',
+});
+
+PricelistRule.belongsTo(Pricelist, {
+  foreignKey: 'pricelist_id',
+  as: 'pricelist',
+});
+
+Product.hasMany(PricelistRule, {
+  foreignKey: 'product_id',
+  as: 'pricelist_rules',
+});
+
+PricelistRule.belongsTo(Product, {
+  foreignKey: 'product_id',
+  as: 'product',
+});
+
 module.exports = {
   sequelize,
   User,
@@ -297,4 +356,8 @@ module.exports = {
   LateFeeConfig,
   LateFee,
   DepositSettlement,
+  Invoice,
+  QuotationTemplate,
+  Pricelist,
+  PricelistRule,
 };

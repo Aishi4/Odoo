@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const productController = require('../controllers/product.controller');
 const variantController = require('../controllers/variant.controller');
-const { authenticateToken, authorizeRoles } = require('../middleware/auth.middleware');
+const { authenticateToken, optionalAuthenticateToken, authorizeRoles } = require('../middleware/auth.middleware');
 
 // --- Product Endpoints ---
 
@@ -10,7 +10,10 @@ const { authenticateToken, authorizeRoles } = require('../middleware/auth.middle
 router.post('/', authenticateToken, authorizeRoles('ADMIN', 'VENDOR'), productController.createProduct);
 
 // GET /api/products (Public / Authenticated users - optional status filter)
-router.get('/', productController.getAllProducts);
+router.get('/', optionalAuthenticateToken, productController.getAllProducts);
+
+// GET /api/products/:id/availability (Public / Authenticated users)
+router.get('/:id/availability', productController.checkAvailability);
 
 // GET /api/products/:id (Public / Authenticated users)
 router.get('/:id', productController.getProductById);

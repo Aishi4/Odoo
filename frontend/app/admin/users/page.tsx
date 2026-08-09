@@ -34,7 +34,7 @@ export default function UsersPage() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 tracking-tight">System Users & Roles</h1>
-          <p className="text-sm text-gray-500 mt-1">Live user accounts fetched from PostgreSQL database.</p>
+          <p className="text-sm text-gray-500 mt-1">Manage user accounts, roles, and administrative permissions.</p>
         </div>
       </div>
 

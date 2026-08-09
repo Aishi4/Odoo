@@ -63,6 +63,12 @@ export const authApi = {
   updateProfile: (data: any) =>
     apiFetch('/users/profile', { method: 'PUT', body: JSON.stringify(data) }),
   getUsers: () => apiFetch('/users'),
+  forgotPassword: (email: string) =>
+    apiFetch('/auth/forgot-password', { method: 'POST', body: JSON.stringify({ email }) }),
+  resetPassword: (token: string, newPassword: string) =>
+    apiFetch('/auth/reset-password', { method: 'POST', body: JSON.stringify({ token, newPassword }) }),
+  updateUserRole: (userId: string, role: string) =>
+    apiFetch(`/users/${userId}/role`, { method: 'PUT', body: JSON.stringify({ role }) }),
 };
 
 // Product APIs
@@ -79,7 +85,19 @@ export const productApi = {
     apiFetch(`/products/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   delete: (id: string) => apiFetch(`/products/${id}`, { method: 'DELETE' }),
   deleteProduct: (id: string) => apiFetch(`/products/${id}`, { method: 'DELETE' }),
+  checkAvailability: (id: string, startDate: string, endDate: string) =>
+    apiFetch(`/products/${id}/availability?start_date=${startDate}&end_date=${endDate}`),
   getRentalPeriods: () => apiFetch('/rental-periods'),
+  createRentalPeriod: (data: any) => apiFetch('/rental-periods', { method: 'POST', body: JSON.stringify(data) }),
+  updateRentalPeriod: (id: string, data: any) => apiFetch(`/rental-periods/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteRentalPeriod: (id: string) => apiFetch(`/rental-periods/${id}`, { method: 'DELETE' }),
+};
+
+export const rentalPeriodApi = {
+  getAll: () => apiFetch('/rental-periods'),
+  create: (data: any) => apiFetch('/rental-periods', { method: 'POST', body: JSON.stringify(data) }),
+  update: (id: string, data: any) => apiFetch(`/rental-periods/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  delete: (id: string) => apiFetch(`/rental-periods/${id}`, { method: 'DELETE' }),
 };
 
 export const catalogApi = productApi;
@@ -115,13 +133,24 @@ export const orderApi = {
   getPaymentSummary: (orderId: string) => apiFetch(`/orders/${orderId}/payment-summary`),
   payOrder: (orderId: string, payment_method: string = 'ONLINE') =>
     apiFetch(`/orders/${orderId}/payment`, { method: 'POST', body: JSON.stringify({ payment_method }) }),
+  acceptQuotation: (orderId: string) =>
+    apiFetch(`/orders/${orderId}/accept-quotation`, { method: 'PUT' }),
+  rejectQuotation: (orderId: string) =>
+    apiFetch(`/orders/${orderId}/reject-quotation`, { method: 'PUT' }),
 };
 
 // Admin Operations & Dashboard APIs
 export const adminApi = {
   getAllOrders: () => apiFetch('/admin/orders'),
+  getSchedule: (month?: string) => apiFetch(`/admin/schedule${month ? `?month=${month}` : ''}`),
   updateOrderStatus: (orderId: string, status: string) =>
     apiFetch(`/admin/orders/${orderId}/status`, { method: 'PUT', body: JSON.stringify({ status }) }),
+  sendQuotation: (orderId: string) =>
+    apiFetch(`/admin/orders/${orderId}/send`, { method: 'PUT' }),
+  confirmOrder: (orderId: string) =>
+    apiFetch(`/admin/orders/${orderId}/confirm`, { method: 'PUT' }),
+  createInvoice: (orderId: string) =>
+    apiFetch(`/admin/orders/${orderId}/create-invoice`, { method: 'POST' }),
   getDashboardOverview: () => apiFetch('/admin/dashboard/overview'),
   getActiveRentals: () => apiFetch('/admin/dashboard/active-rentals'),
   getDueToday: () => apiFetch('/admin/dashboard/due-today'),
@@ -141,4 +170,50 @@ export const adminApi = {
   getPriorities: () => apiFetch('/admin/dashboard/priorities'),
   getRentalStatusSummary: () => apiFetch('/admin/dashboard/rental-status'),
   getRevenueSummary: (period: string = 'monthly') => apiFetch(`/admin/dashboard/revenue-summary?period=${period}`),
+  getTopRentedProducts: (limit: number = 5) => apiFetch(`/admin/dashboard/top-products?limit=${limit}`),
 };
+
+// Invoice APIs
+export const invoiceApi = {
+  getInvoices: (status?: string) =>
+    apiFetch(`/admin/invoices${status ? `?status=${status}` : ''}`),
+  getInvoiceById: (id: string) => apiFetch(`/admin/invoices/${id}`),
+  postInvoice: (id: string) => apiFetch(`/admin/invoices/${id}/post`, { method: 'PUT' }),
+  updateInvoiceStatus: (id: string, data: { status?: string; payment_status?: string }) =>
+    apiFetch(`/admin/invoices/${id}/status`, { method: 'PUT', body: JSON.stringify(data) }),
+  registerPayment: (id: string, paymentAmount: number, paymentMethod: string = 'ONLINE') =>
+    apiFetch(`/admin/invoices/${id}/register-payment`, { method: 'POST', body: JSON.stringify({ paymentAmount, paymentMethod }) }),
+  refundDeposit: (orderId: string, refundAmount: number, note?: string) =>
+    apiFetch(`/admin/orders/${orderId}/refund-deposit`, { method: 'POST', body: JSON.stringify({ refundAmount, note }) }),
+};
+
+// Quotation Template APIs
+export const quotationTemplateApi = {
+  getTemplates: () => apiFetch('/admin/quotation-templates'),
+  getTemplateById: (id: string) => apiFetch(`/admin/quotation-templates/${id}`),
+  createTemplate: (data: any) =>
+    apiFetch('/admin/quotation-templates', { method: 'POST', body: JSON.stringify(data) }),
+  updateTemplate: (id: string, data: any) =>
+    apiFetch(`/admin/quotation-templates/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteTemplate: (id: string) =>
+    apiFetch(`/admin/quotation-templates/${id}`, { method: 'DELETE' }),
+};
+
+// Pricelist APIs
+export const pricelistApi = {
+  getPricelists: () => apiFetch('/admin/pricelists'),
+  getPricelistById: (id: string) => apiFetch(`/admin/pricelists/${id}`),
+  createPricelist: (data: any) =>
+    apiFetch('/admin/pricelists', { method: 'POST', body: JSON.stringify(data) }),
+  updatePricelist: (id: string, data: any) =>
+    apiFetch(`/admin/pricelists/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deletePricelist: (id: string) =>
+    apiFetch(`/admin/pricelists/${id}`, { method: 'DELETE' }),
+  addRule: (pricelistId: string, ruleData: any) =>
+    apiFetch(`/admin/pricelists/${pricelistId}/rules`, { method: 'POST', body: JSON.stringify(ruleData) }),
+  deleteRule: (pricelistId: string, ruleId: string) =>
+    apiFetch(`/admin/pricelists/${pricelistId}/rules/${ruleId}`, { method: 'DELETE' }),
+  calculatePrice: (data: { productId: string; quantity: number; basePrice: number; pricelistId?: string }) =>
+    apiFetch('/admin/pricelists/calculate-price', { method: 'POST', body: JSON.stringify(data) }),
+};
+

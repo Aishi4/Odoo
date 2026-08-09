@@ -27,9 +27,12 @@ export default function Login() {
       if (res.data.user) {
         localStorage.setItem('user', JSON.stringify(res.data.user));
       }
+      window.dispatchEvent(new Event('userUpdated'));
 
       // Redirect based on user role
-      if (res.data.user?.role === 'ADMIN') {
+      if (res.data.user?.role === 'SUPERADMIN') {
+        router.push('/admin/super');
+      } else if (res.data.user?.role === 'ADMIN' || res.data.user?.role === 'VENDOR') {
         router.push('/admin');
       } else {
         router.push('/');

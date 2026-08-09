@@ -33,18 +33,22 @@ export default function VendorRegister() {
       name: `${fullName} (${companyName || 'Vendor'})`,
       email,
       password,
-      role: 'ADMIN' // Vendor / Admin management role
+      role: 'VENDOR' // Registered Vendor partner role
     });
 
     setLoading(false);
 
     if (res.success && res.data) {
-      if (res.data.token) {
-        localStorage.setItem('token', res.data.token);
+      const token = res.data.token;
+      const user = res.data.user || (res.data.id ? res.data : null);
+
+      if (token) {
+        localStorage.setItem('token', token);
       }
-      if (res.data.user) {
-        localStorage.setItem('user', JSON.stringify(res.data.user));
+      if (user) {
+        localStorage.setItem('user', JSON.stringify(user));
       }
+      window.dispatchEvent(new Event('userUpdated'));
       router.push('/admin');
     } else {
       setError(res.message || 'Vendor registration failed. Please try again.');

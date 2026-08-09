@@ -1,18 +1,40 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, Plus, Trash2 } from 'lucide-react';
 
 export default function AttributesPage() {
-  const [attributes, setAttributes] = useState<Array<{ id: string; name: string; values: string; type: string }>>([
-    { id: '1', name: 'Color', values: 'Black, White, Silver', type: 'Radio' },
-    { id: '2', name: 'Size', values: 'Small, Medium, Large', type: 'Select' },
-  ]);
+  const [attributes, setAttributes] = useState<Array<{ id: string; name: string; values: string; type: string }>>([]);
   const [search, setSearch] = useState('');
   const [name, setName] = useState('');
   const [values, setValues] = useState('');
   const [type, setType] = useState('Select');
   const [showModal, setShowModal] = useState(false);
+
+  useEffect(() => {
+    try {
+      const userStr = localStorage.getItem('user');
+      const user = userStr ? JSON.parse(userStr) : null;
+      const key = user?.id ? `vendor_attributes_${user.id}` : 'vendor_attributes';
+      const saved = localStorage.getItem(key);
+      if (saved) {
+        setAttributes(JSON.parse(saved));
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }, []);
+
+  const saveToStorage = (updated: Array<{ id: string; name: string; values: string; type: string }>) => {
+    try {
+      const userStr = localStorage.getItem('user');
+      const user = userStr ? JSON.parse(userStr) : null;
+      const key = user?.id ? `vendor_attributes_${user.id}` : 'vendor_attributes';
+      localStorage.setItem(key, JSON.stringify(updated));
+    } catch (e) {
+      console.error(e);
+    }
+  };
 
   const handleAddAttribute = (e: React.FormEvent) => {
     e.preventDefault();
@@ -25,14 +47,18 @@ export default function AttributesPage() {
       type,
     };
 
-    setAttributes([...attributes, newAttr]);
+    const updated = [...attributes, newAttr];
+    setAttributes(updated);
+    saveToStorage(updated);
     setName('');
     setValues('');
     setShowModal(false);
   };
 
   const handleDelete = (id: string) => {
-    setAttributes(attributes.filter((a) => a.id !== id));
+    const updated = attributes.filter((a) => a.id !== id);
+    setAttributes(updated);
+    saveToStorage(updated);
   };
 
   const filteredAttributes = attributes.filter((a) =>
@@ -44,7 +70,7 @@ export default function AttributesPage() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Product Attributes & Variants</h1>
-          <p className="text-sm text-gray-500 mt-1">Manage attributes for configurable products.</p>
+          <p className="text-sm text-gray-500 mt-1">Manage custom attributes for your products.</p>
         </div>
         
         <button 
@@ -70,7 +96,7 @@ export default function AttributesPage() {
 
       <div className="bg-white rounded-b-xl border border-gray-200 shadow-sm overflow-hidden">
         {filteredAttributes.length === 0 ? (
-          <div className="p-12 text-center text-gray-500">No attributes found. Click 'Add New Attribute' to create one.</div>
+          <div className="p-12 text-center text-gray-500">No attributes found. Click 'Add New Attribute' to create one for your store.</div>
         ) : (
           <table className="w-full text-left text-sm whitespace-nowrap">
             <thead className="bg-gray-50 text-gray-600 font-semibold border-b border-gray-200">

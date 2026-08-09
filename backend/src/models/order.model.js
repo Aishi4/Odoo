@@ -24,6 +24,8 @@ const Order = sequelize.define(
     },
     status: {
       type: DataTypes.ENUM(
+        'DRAFT',
+        'SENT',
         'PENDING_PAYMENT',
         'CONFIRMED',
         'READY_FOR_PICKUP',
@@ -35,7 +37,7 @@ const Order = sequelize.define(
         'CANCELLED'
       ),
       allowNull: false,
-      defaultValue: 'PENDING_PAYMENT',
+      defaultValue: 'DRAFT',
     },
     subtotal: {
       type: DataTypes.DECIMAL(10, 2),
@@ -56,6 +58,11 @@ const Order = sequelize.define(
     end_date: {
       type: DataTypes.DATEONLY,
       allowNull: false,
+    },
+    expires_at: {
+      type: DataTypes.DATE,
+      allowNull: true,
+      defaultValue: null,
     },
   },
   {

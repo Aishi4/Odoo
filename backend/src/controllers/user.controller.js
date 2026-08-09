@@ -24,7 +24,8 @@ const getProfile = async (req, res, next) => {
  */
 const getAllUsers = async (req, res, next) => {
   try {
-    const users = await userService.findAllUsers();
+    const vendorId = req.user?.role === 'VENDOR' ? req.user.id : null;
+    const users = await userService.findAllUsers(vendorId);
     return successResponse(res, 200, 'Users retrieved successfully', users);
   } catch (error) {
     next(error);
@@ -59,8 +60,33 @@ const updateProfile = async (req, res, next) => {
   }
 };
 
+/**
+ * PUT /api/users/:id/role
+ * Update user role (Super Admin / Admin action)
+ */
+const updateRole = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { role } = req.body;
+
+    if (!role || !['CUSTOMER', 'VENDOR', 'ADMIN', 'SUPERADMIN'].includes(role)) {
+      throw new AppError('Valid role (CUSTOMER, VENDOR, ADMIN, SUPERADMIN) is required', 400);
+    }
+
+    const updatedUser = await userService.updateUserRole(id, role);
+    if (!updatedUser) {
+      throw new AppError('User not found or role update failed', 404);
+    }
+
+    return successResponse(res, 200, `User role updated to ${role} successfully`, updatedUser);
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getProfile,
   getAllUsers,
   updateProfile,
+  updateRole,
 };

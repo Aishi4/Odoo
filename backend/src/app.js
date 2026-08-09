@@ -8,6 +8,9 @@ const rentalPeriodRoutes = require('./routes/rental_period.routes');
 const cartRoutes = require('./routes/cart.routes');
 const orderRoutes = require('./routes/order.routes');
 const adminOrderRoutes = require('./routes/admin_order.routes');
+const invoiceRoutes = require('./routes/invoice.routes');
+const quotationTemplateRoutes = require('./routes/quotation_template.routes');
+const pricelistRoutes = require('./routes/pricelist.routes');
 const dashboardRoutes = require('./routes/dashboard.routes');
 const { customErrorHandler, globalFallbackErrorHandler } = require('./middleware/error.middleware');
 const AppError = require('./utils/errors');
@@ -37,6 +40,9 @@ app.use('/api/rental-periods', rentalPeriodRoutes);
 app.use('/api/cart', cartRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/admin/dashboard', dashboardRoutes);
+app.use('/api/admin/invoices', invoiceRoutes);
+app.use('/api/admin/quotation-templates', quotationTemplateRoutes);
+app.use('/api/admin/pricelists', pricelistRoutes);
 app.use('/api/admin', adminOrderRoutes);
 
 // Serve index.html for root path

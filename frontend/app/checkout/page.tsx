@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { CreditCard, MapPin, ShoppingBag, CheckCircle, ArrowRight, ShieldCheck, Loader2, AlertCircle } from 'lucide-react';
+import { CreditCard, MapPin, ShoppingBag, CheckCircle, ArrowRight, ShieldCheck, Loader2, AlertCircle, Clock } from 'lucide-react';
 import { orderApi, cartApi } from '@/lib/api';
 
 export default function Checkout() {
@@ -12,6 +12,7 @@ export default function Checkout() {
   const [placingOrder, setPlacingOrder] = useState(false);
   const [createdOrder, setCreatedOrder] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
+  const [timeLeft, setTimeLeft] = useState<number>(600); // 10 minutes hold timer
 
   const [deliveryMethod, setDeliveryMethod] = useState<'DELIVERY' | 'STORE_PICKUP'>('DELIVERY');
   const [address, setAddress] = useState({
@@ -58,6 +59,21 @@ export default function Checkout() {
   useEffect(() => {
     loadCart();
   }, []);
+
+  useEffect(() => {
+    if (step === 3 && timeLeft > 0) {
+      const timer = setInterval(() => {
+        setTimeLeft((prev) => (prev > 0 ? prev - 1 : 0));
+      }, 1000);
+      return () => clearInterval(timer);
+    }
+  }, [step, timeLeft]);
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+  };
 
   const subtotal = cartItems.reduce((acc, item) => {
     const p = Number(item.price || item.unit_price || item.product?.base_price || item.base_price || 0);
@@ -181,6 +197,9 @@ export default function Checkout() {
                         <img src={imgUrl} alt={name} className="w-16 h-16 object-cover rounded-lg bg-white border border-gray-200" />
                         <div className="flex-1">
                           <h3 className="font-bold text-gray-900 text-sm">{name}</h3>
+                          <div className="text-xs text-[#CD2C58] font-semibold">
+                            {item.start_date && item.end_date ? `${item.start_date} to ${item.end_date}` : (item.rental_period || item.period || '1 Day Rental')}
+                          </div>
                           <p className="text-xs text-gray-500">Qty: {item.quantity || 1}</p>
                         </div>
                         <div className="text-right">
@@ -291,9 +310,19 @@ export default function Checkout() {
         {step === 3 && (
           <div className="p-8 animate-in fade-in slide-in-from-right-4 duration-300">
             <h2 className="text-2xl font-bold text-gray-900 mb-2">Payment Details</h2>
-            <p className="text-gray-500 mb-8 flex items-center gap-2 text-sm">
-              <ShieldCheck className="w-4 h-4 text-emerald-500" /> Standard Mock Payment Gateway connected to PostgreSQL backend.
+            <p className="text-gray-500 mb-4 flex items-center gap-2 text-sm">
+              <ShieldCheck className="w-4 h-4 text-emerald-500" /> Standard Secure Payment Gateway.
             </p>
+
+            <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-xl flex items-center justify-between text-amber-900 text-sm font-semibold shadow-xs">
+              <div className="flex items-center gap-2">
+                <Clock className="w-5 h-5 text-amber-600 animate-pulse" />
+                <span>Stock Reservation Held (10-minute hold window)</span>
+              </div>
+              <div className="font-mono text-base font-black bg-amber-200/60 px-3 py-1 rounded-lg text-amber-950">
+                ⏳ {formatTime(timeLeft)}
+              </div>
+            </div>
             
             <div className="bg-gray-50 rounded-xl p-6 border border-gray-200 mb-8">
               <div className="space-y-2 mb-6 text-sm border-b border-gray-200 pb-4">
@@ -367,7 +396,7 @@ export default function Checkout() {
             </div>
             <h2 className="text-3xl font-black text-gray-900 mb-3">Order Confirmed!</h2>
             <p className="text-gray-600 mb-8 max-w-md mx-auto text-sm">
-              Your rental order <span className="font-bold text-gray-900">#{createdOrder?.order_number || createdOrder?.id?.slice(0, 8)}</span> has been successfully processed and saved into PostgreSQL backend database.
+              Your rental order <span className="font-bold text-gray-900">#{createdOrder?.order_number || createdOrder?.id?.slice(0, 8)}</span> has been successfully processed.
             </p>
             
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">

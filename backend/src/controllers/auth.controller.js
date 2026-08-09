@@ -31,11 +31,18 @@ const register = async (req, res, next) => {
       role: role || 'CUSTOMER',
     });
 
+    const token = generateToken({ id: newUser.id, email: newUser.email, role: newUser.role });
+
     const responseData = {
-      id: newUser.id,
-      name: newUser.name,
-      email: newUser.email,
-      role: newUser.role,
+      token,
+      user: {
+        id: newUser.id,
+        name: newUser.name,
+        email: newUser.email,
+        role: newUser.role,
+        profile_image: newUser.profile_image || null,
+        address: newUser.address || null,
+      },
     };
 
     return successResponse(res, 201, 'User registered successfully', responseData);
@@ -70,6 +77,8 @@ const login = async (req, res, next) => {
       name: user.name,
       email: user.email,
       role: user.role,
+      profile_image: user.profile_image || null,
+      address: user.address || null,
     };
 
     return successResponse(res, 200, 'Login successful', {
@@ -113,15 +122,28 @@ const forgotPassword = async (req, res, next) => {
 
     await userService.setResetPasswordToken(email, resetToken, expiresAt);
 
+    let emailSent = false;
+    let mailErrorMessage = null;
     try {
       await emailService.sendPasswordResetEmail(email, resetToken, user.name);
+      emailSent = true;
     } catch (mailError) {
-      console.error('Nodemailer Error:', mailError);
+      console.error('Nodemailer Error:', mailError.message || mailError);
+      mailErrorMessage = mailError.message || 'Failed to send email';
     }
 
-    return successResponse(res, 200, 'Password reset token sent to email successfully', {
-      resetToken,
-    });
+    console.log(`[AUTH] Password reset token generated for ${email}: ${resetToken}`);
+
+    return successResponse(
+      res,
+      200,
+      emailSent
+        ? 'If an account with that email exists, a password reset link has been sent.'
+        : 'Password reset request received, but email delivery failed.',
+      {
+        emailSent,
+      }
+    );
   } catch (error) {
     next(error);
   }

@@ -134,9 +134,19 @@ function CatalogContent() {
 
   const categoriesList = ['Furniture', 'Electronics', 'Photography', 'Office', 'Vehicles'];
 
+  const matchCategory = (prodCat: string, filterCat: string) => {
+    if (!prodCat) return false;
+    const pCat = prodCat.toLowerCase();
+    const fCat = filterCat.toLowerCase();
+    if (pCat === fCat) return true;
+    if (fCat === 'photography' && (pCat === 'cameras' || pCat === 'camera' || pCat === 'photography')) return true;
+    if (fCat === 'electronics' && (pCat === 'electronics' || pCat === 'gadgets')) return true;
+    return false;
+  };
+
   const filteredProducts = products.filter(p => {
     if (query && !p.name.toLowerCase().includes(query)) return false;
-    if (selectedCategories.length > 0 && !selectedCategories.includes(p.category)) return false;
+    if (selectedCategories.length > 0 && !selectedCategories.some(cat => matchCategory(p.category, cat))) return false;
     if (selectedBrands.length > 0 && !selectedBrands.some(b => p.name.includes(b))) return false;
     if (p.price < minPrice || p.price > maxPrice) return false;
     if (hideOutOfStock && !p.stock) return false;
@@ -173,7 +183,7 @@ function CatalogContent() {
               <div className="space-y-3 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
                 {categoriesList.map((cat) => {
                   const isSelected = selectedCategories.includes(cat);
-                  const count = products.filter(p => p.category === cat).length;
+                  const count = products.filter(p => matchCategory(p.category, cat)).length;
 
                   return (
                     <label key={cat} className="flex items-center justify-between cursor-pointer group" onClick={(e) => { e.preventDefault(); toggleCategory(cat); }}>
@@ -242,12 +252,17 @@ function CatalogContent() {
                 const isAvailable = product.stock;
 
                 return (
-                  <div key={product.id} className="bg-white rounded-2xl border border-gray-200 overflow-hidden hover:shadow-lg transition-all group flex flex-col justify-between">
+                  <Link 
+                    key={product.id} 
+                    href={`/product/${product.id}`}
+                    className="bg-white rounded-2xl border border-gray-200 overflow-hidden hover:shadow-lg transition-all group flex flex-col justify-between cursor-pointer"
+                  >
                     <div className="relative h-56 bg-gray-100 overflow-hidden">
                       <Image 
                         src={product.img} 
                         alt={product.name} 
                         fill 
+                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                         className={`object-cover group-hover:scale-105 transition-transform duration-300 ${!isAvailable ? 'grayscale opacity-75' : ''}`}
                       />
                       
@@ -290,23 +305,17 @@ function CatalogContent() {
                         </div>
 
                         {isAvailable ? (
-                          <button 
-                            onClick={(e) => handleQuickAdd(product, e)}
-                            className="px-4 py-2 bg-[#CD2C58] text-white text-xs font-bold rounded-xl hover:bg-[#b02248] transition-colors shadow-sm flex items-center gap-1.5"
-                          >
-                            <ShoppingBag className="w-3.5 h-3.5" /> Rent Now
-                          </button>
+                          <span className="px-4 py-2 bg-[#CD2C58] text-white text-xs font-bold rounded-xl group-hover:bg-[#b02248] transition-colors shadow-sm flex items-center gap-1.5">
+                            <ShoppingBag className="w-3.5 h-3.5" /> Rent & Select Dates
+                          </span>
                         ) : (
-                          <button 
-                            disabled 
-                            className="px-3 py-2 bg-gray-200 text-gray-500 text-xs font-bold rounded-xl cursor-not-allowed"
-                          >
+                          <span className="px-3 py-2 bg-gray-200 text-gray-500 text-xs font-bold rounded-xl cursor-not-allowed">
                             Unavailable
-                          </button>
+                          </span>
                         )}
                       </div>
                     </div>
-                  </div>
+                  </Link>
                 );
               })}
             </div>

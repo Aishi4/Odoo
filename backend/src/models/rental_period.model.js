@@ -9,6 +9,11 @@ const RentalPeriod = sequelize.define(
       defaultValue: DataTypes.UUIDV4,
       primaryKey: true,
     },
+    vendor_id: {
+      type: DataTypes.UUID,
+      allowNull: true,
+      defaultValue: null,
+    },
     name: {
       type: DataTypes.STRING,
       allowNull: false,
@@ -25,13 +30,22 @@ const RentalPeriod = sequelize.define(
       },
     },
     unit: {
-      type: DataTypes.ENUM('DAY', 'WEEK', 'MONTH'),
+      type: DataTypes.ENUM('HOUR', 'DAY', 'WEEK', 'MONTH'),
       allowNull: false,
       validate: {
         isIn: {
-          args: [['DAY', 'WEEK', 'MONTH']],
-          msg: 'Unit must be DAY, WEEK, or MONTH',
+          args: [['HOUR', 'DAY', 'WEEK', 'MONTH']],
+          msg: 'Unit must be HOUR, DAY, WEEK, or MONTH',
         },
+      },
+    },
+    discount_percent: {
+      type: DataTypes.DECIMAL(5, 2),
+      allowNull: false,
+      defaultValue: 0.00,
+      validate: {
+        min: { args: [0], msg: 'Discount cannot be negative' },
+        max: { args: [100], msg: 'Discount cannot exceed 100%' },
       },
     },
     status: {

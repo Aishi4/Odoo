@@ -9,6 +9,11 @@ const Product = sequelize.define(
       defaultValue: DataTypes.UUIDV4,
       primaryKey: true,
     },
+    vendor_id: {
+      type: DataTypes.UUID,
+      allowNull: true,
+      defaultValue: null,
+    },
     name: {
       type: DataTypes.STRING,
       allowNull: false,
@@ -40,6 +45,61 @@ const Product = sequelize.define(
       type: DataTypes.ENUM('ACTIVE', 'INACTIVE'),
       allowNull: false,
       defaultValue: 'ACTIVE',
+    },
+    product_type: {
+      type: DataTypes.ENUM('Goods', 'Service'),
+      allowNull: false,
+      defaultValue: 'Goods',
+    },
+    quantity_on_hand: {
+      type: DataTypes.DECIMAL(10, 2),
+      allowNull: false,
+      defaultValue: 100.00,
+    },
+    cost_price: {
+      type: DataTypes.DECIMAL(10, 2),
+      allowNull: false,
+      defaultValue: 0.00,
+    },
+    is_published: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: true,
+    },
+    periodicity: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      defaultValue: 'Day',
+    },
+    pickup_time: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      defaultValue: '10:00 H',
+    },
+    return_time: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      defaultValue: '19:00 H',
+    },
+    padding_time: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      defaultValue: '2:00 H',
+    },
+    late_fees: {
+      type: DataTypes.DECIMAL(10, 2),
+      allowNull: false,
+      defaultValue: 150.00,
+    },
+    security_deposit: {
+      type: DataTypes.DECIMAL(10, 2),
+      allowNull: false,
+      defaultValue: 100.00,
+    },
+    attributes: {
+      type: DataTypes.JSON,
+      allowNull: true,
+      defaultValue: [],
     },
   },
   {

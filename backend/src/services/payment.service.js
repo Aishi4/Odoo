@@ -71,6 +71,14 @@ class PaymentService {
         throw new AppError(`Cannot process payment for order in '${order.status}' state. Payment already processed or cancelled.`, 400);
       }
 
+      // Check if stock reservation hold expired (> 10 minutes)
+      if (order.expires_at && new Date(order.expires_at) < new Date()) {
+        order.status = 'CANCELLED';
+        order.expires_at = null;
+        await order.save({ transaction });
+        throw new AppError('Stock reservation timed out (10-minute hold window expired). Reserved stock was released to other customers. Please add items to cart and check out again.', 400);
+      }
+
       // 2. Server-side financial calculations
       const rentalAmount = Number(order.subtotal);
       const securityDepositAmount = securityDepositService.calculateDeposit(rentalAmount);
@@ -143,12 +151,21 @@ class PaymentService {
         scheduledReturnAt: order.end_date,
       }, transaction);
 
-      // 8. Update Order status to CONFIRMED
+      // 8. Update Order status to CONFIRMED and release hold timer
       order.status = 'CONFIRMED';
+      order.expires_at = null;
       await order.save({ transaction });
 
       // 9. Commit Transaction
       await transaction.commit();
+
+      // 10. Auto-generate Invoice for vendor & customer
+      try {
+        const invoiceService = require('./invoice.service');
+        await invoiceService.createInvoiceForOrder(order.id);
+      } catch (invErr) {
+        console.error('Failed to auto-generate invoice on payment:', invErr.message);
+      }
 
       return {
         success: true,

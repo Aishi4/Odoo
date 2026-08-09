@@ -5,13 +5,25 @@ const paymentController = require('../controllers/payment.controller');
 const pickupController = require('../controllers/pickup.controller');
 const returnController = require('../controllers/return.controller');
 const lateFeeController = require('../controllers/late_fee.controller');
+const invoiceController = require('../controllers/invoice.controller');
 const { authenticateToken, authorizeRoles } = require('../middleware/auth.middleware');
 
 router.use(authenticateToken, authorizeRoles('ADMIN', 'VENDOR'));
 
 // Admin Orders Inspection & Status Actions
 router.get('/orders', adminOrderController.getAllOrders);
+router.get('/schedule', adminOrderController.getRentalSchedule);
 router.put('/orders/:id/status', adminOrderController.updateOrderStatus);
+router.put('/orders/:id/send', adminOrderController.sendQuotation);
+router.put('/orders/:id/confirm', adminOrderController.confirmOrder);
+router.post('/orders/:orderId/create-invoice', invoiceController.createInvoice);
+router.post('/orders/:orderId/refund-deposit', invoiceController.refundDeposit);
+
+// Admin Invoicing & Payment Actions
+router.get('/invoices', invoiceController.getAllInvoices);
+router.get('/invoices/:id', invoiceController.getInvoiceById);
+router.put('/invoices/:id/post', invoiceController.postInvoice);
+router.post('/invoices/:id/register-payment', invoiceController.registerPayment);
 
 // Admin Payments & Security Deposits Inspection
 router.get('/payments', paymentController.getAllAdminPayments);
